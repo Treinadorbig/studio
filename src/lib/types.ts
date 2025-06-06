@@ -1,3 +1,4 @@
+
 export interface Client {
   id: string;
   name: string;
@@ -9,6 +10,7 @@ export interface Client {
   fitnessLevel: 'Beginner' | 'Intermediate' | 'Advanced';
   goals: string; // text area for goals
   avatarUrl?: string;
+  dataAiHint?: string;
   workoutHistory?: string; // Simple text for now, could be structured
   progress?: number; // Percentage 0-100
 }
@@ -18,6 +20,7 @@ export interface Exercise {
   name: string;
   description: string;
   videoUrl?: string; // URL to a demonstration video
+  dataAiHint?: string;
   muscleGroups: string[];
   equipmentNeeded?: string[];
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
