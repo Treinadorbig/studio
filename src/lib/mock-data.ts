@@ -1,3 +1,4 @@
+
 import type { Client, Exercise, WorkoutPlan, ScheduledWorkout } from './types';
 
 export const MOCK_CLIENTS: Client[] = [
@@ -71,7 +72,7 @@ export const MOCK_EXERCISES: Exercise[] = [
   },
   {
     id: 'ex3',
-    name: 'Deadlift',
+    name: 'Levantamento Terra',
     description: 'A full-body compound exercise. Stand with mid-foot under the barbell. Bend at hips and knees to grip the bar. Keep back straight, chest up. Lift the bar by extending hips and knees simultaneously. Lower bar by reversing the motion.',
     muscleGroups: ['Hamstrings', 'Glutes', 'Back', 'Core', 'Traps'],
     equipmentNeeded: ['Barbell'],
@@ -153,3 +154,4 @@ export const MOCK_SCHEDULED_WORKOUTS: ScheduledWorkout[] = [
     status: 'Scheduled',
   }
 ];
+
