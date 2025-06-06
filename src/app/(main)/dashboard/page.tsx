@@ -126,11 +126,11 @@ function ClientWorkoutPlanCard({ plan }: { plan: WorkoutPlan }) {
   );
 }
 
-function ClientDashboardContent({ client, clientPlans }: { client: Client, clientPlans: WorkoutPlan[] }) {
+function ClientDashboardContent({ client, clientPlans }: { client: Client | null, clientPlans: WorkoutPlan[] }) {
   if (!client) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-10 text-center">
-        <Icons.UserCircle className="h-20 w-20 text-destructive mb-4" />
+        <Icons.Profile className="h-20 w-20 text-destructive mb-4" />
         <h2 className="text-2xl font-semibold">Cliente não encontrado</h2>
         <p className="text-muted-foreground">Não foi possível carregar os dados do cliente. Por favor, tente fazer login novamente.</p>
       </div>
@@ -246,7 +246,7 @@ export default function DashboardPage() {
   }
 
   if (userType === 'client') {
-    return <ClientDashboardContent client={currentClient!} clientPlans={clientWorkoutPlans} />;
+    return <ClientDashboardContent client={currentClient} clientPlans={clientWorkoutPlans} />;
   }
 
   if (userType === 'personal') {
@@ -255,7 +255,7 @@ export default function DashboardPage() {
 
   return (
      <div className="flex h-full items-center justify-center">
-        <Icons.UserCircle className="h-12 w-12 text-muted-foreground" />
+        <Icons.Profile className="h-12 w-12 text-muted-foreground" />
         <p className="ml-2">Tipo de usuário não reconhecido. Por favor, faça login novamente.</p>
       </div>
   );
