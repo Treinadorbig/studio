@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -11,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: Icons.Dashboard },
-  { href: '/exercises', label: 'Exercises', icon: Icons.Exercises },
+  { href: '/exercises', label: 'Biblioteca de Treinos', icon: Icons.Exercises },
   { href: '/schedule', label: 'Schedule', icon: Icons.Schedule },
   // { href: '/settings', label: 'Settings', icon: Icons.Settings },
 ];

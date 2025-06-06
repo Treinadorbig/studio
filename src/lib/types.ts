@@ -22,8 +22,8 @@ export interface Exercise {
   description: string;
   videoUrl?: string; // URL to a demonstration video
   dataAiHint?: string;
-  muscleGroups: string[];
-  equipmentNeeded?: string[];
+  muscleGroups: string[] | string; // Allow string for initial mock data, but array for new entries
+  equipmentNeeded?: string[] | string; // Allow string for initial mock data, but array for new entries
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
