@@ -2,7 +2,7 @@
 import {
   LayoutDashboard,
   Users,
-  Dumbbell,
+  Dumbbell, // Will be used for Logo now
   CalendarDays,
   Settings,
   LogIn,
@@ -19,16 +19,16 @@ import {
   Brain,
   ArrowLeft,
   Activity,
-  HeartPulse, // Added for new logo
-  Apple, // Added for Diet Plans
+  HeartPulse, 
+  Apple, 
   type LucideProps,
 } from 'lucide-react';
 
 export const Icons = {
-  Logo: (props: LucideProps) => <HeartPulse {...props} />, // Changed to HeartPulse
+  Logo: (props: LucideProps) => <Dumbbell {...props} />, // Changed to Dumbbell
   Dashboard: LayoutDashboard,
   Clients: Users,
-  Exercises: Dumbbell, // Keeping Dumbbell for exercises context
+  Exercises: Dumbbell, 
   Schedule: CalendarDays,
   Settings,
   Login: LogIn,
@@ -42,7 +42,7 @@ export const Icons = {
   Search,
   Feedback: MessageSquare,
   WorkoutPlan: ClipboardList,
-  Diet: Apple, // Added Diet Icon
+  Diet: Apple, 
   Brain,
   ArrowLeft,
   Activity,
