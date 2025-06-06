@@ -1,5 +1,6 @@
 
-import type { Client, Exercise, WorkoutPlan, ScheduledWorkout } from './types';
+
+import type { Client, Exercise, WorkoutPlan, ScheduledWorkout, DietPlan } from './types';
 
 export const MOCK_CLIENTS: Client[] = [
   {
@@ -155,3 +156,41 @@ export const MOCK_SCHEDULED_WORKOUTS: ScheduledWorkout[] = [
   }
 ];
 
+export const MOCK_DIET_PLANS: DietPlan[] = [
+  {
+    id: 'dp1',
+    clientId: '1',
+    name: 'Alice - Plano Inicial de Reeducação',
+    description: 'Foco em alimentos integrais e hidratação.',
+    createdAt: new Date().toISOString(),
+    meals: [
+      {
+        mealName: 'Café da Manhã',
+        time: '08:00',
+        items: [
+          { foodName: 'Ovos Cozidos', quantity: '2 unidades', notes: 'Fonte de proteína.' },
+          { foodName: 'Mamão Papaia', quantity: '1/2 unidade pequena', notes: 'Com sementes.' },
+          { foodName: 'Café Preto', quantity: '1 xícara', notes: 'Sem açúcar.' },
+        ],
+      },
+      {
+        mealName: 'Almoço',
+        time: '12:30',
+        items: [
+          { foodName: 'Peito de Frango Grelhado', quantity: '120g' },
+          { foodName: 'Arroz Integral', quantity: '4 colheres de sopa' },
+          { foodName: 'Salada Colorida (folhas, tomate, pepino)', quantity: 'À vontade', notes: 'Temperar com azeite e limão.' },
+        ],
+      },
+      {
+        mealName: 'Jantar',
+        time: '19:00',
+        items: [
+          { foodName: 'Salmão Assado', quantity: '100g' },
+          { foodName: 'Batata Doce Cozida', quantity: '1 unidade média' },
+          { foodName: 'Brócolis no Vapor', quantity: '1 xícara' },
+        ],
+      },
+    ],
+  },
+];

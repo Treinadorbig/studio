@@ -22,8 +22,8 @@ export interface Exercise {
   description: string;
   videoUrl?: string; // URL to a demonstration video
   dataAiHint?: string;
-  muscleGroups: string[] | string; // Allow string for initial mock data, but array for new entries
-  equipmentNeeded?: string[] | string; // Allow string for initial mock data, but array for new entries
+  muscleGroups: string[];
+  equipmentNeeded?: string[];
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
@@ -63,3 +63,24 @@ export interface AISuggestion {
   reason: string;
 }
 
+// Diet Plan Types
+export interface FoodItem {
+  foodName: string;
+  quantity: string; // e.g., "100g", "1 unidade", "1 xícara"
+  notes?: string; // Optional notes for the food item
+}
+
+export interface DietMeal {
+  mealName: string; // e.g., "Café da Manhã", "Almoço", "Lanche da Tarde"
+  items: FoodItem[];
+  time?: string; // Optional: e.g., "08:00", "13:00"
+}
+
+export interface DietPlan {
+  id: string;
+  clientId: string;
+  name: string; // e.g., "Plano de Ganho de Massa - Semana 1"
+  description?: string;
+  meals: DietMeal[];
+  createdAt: string; // ISO Date string
+}

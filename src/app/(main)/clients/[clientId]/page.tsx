@@ -3,8 +3,8 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { MOCK_CLIENTS, MOCK_EXERCISES, MOCK_WORKOUT_PLANS } from '@/lib/mock-data';
-import type { Client, AISuggestion, WorkoutPlan, WorkoutItem } from '@/lib/types';
+import { MOCK_CLIENTS, MOCK_EXERCISES, MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS } from '@/lib/mock-data';
+import type { Client, AISuggestion, WorkoutPlan, DietPlan } from '@/lib/types';
 import { suggestExercises, SuggestExercisesInput } from '@/ai/flows/suggest-exercises';
 
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkoutPlanForm } from '@/components/clients/workout-plan-form';
+import { DietPlanForm } from '@/components/clients/diet-plan-form';
 
 
 function ClientProfileDisplay({ client }: { client: Client }) {
@@ -167,12 +168,11 @@ function AiSuggestionsSection({ client }: { client: Client }) {
   );
 }
 
-function WorkoutPlansSection({ client, plans, onSavePlan, onDeletePlan, onEditPlan }: { 
+function WorkoutPlansSection({ client, plans, onSavePlan, onDeletePlan }: { 
   client: Client; 
   plans: WorkoutPlan[];
   onSavePlan: (plan: WorkoutPlan) => void;
   onDeletePlan: (planId: string) => void;
-  onEditPlan: (plan: WorkoutPlan) => void;
 }) {
   const [isPlanFormOpen, setIsPlanFormOpen] = useState(false);
   const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
@@ -268,6 +268,114 @@ function WorkoutPlansSection({ client, plans, onSavePlan, onDeletePlan, onEditPl
   );
 }
 
+function DietPlansSection({ client, plans, onSavePlan, onDeletePlan }: { 
+  client: Client; 
+  plans: DietPlan[];
+  onSavePlan: (plan: DietPlan) => void;
+  onDeletePlan: (planId: string) => void;
+}) {
+  const [isPlanFormOpen, setIsPlanFormOpen] = useState(false);
+  const [planToEdit, setPlanToEdit] = useState<DietPlan | null>(null);
+  const { toast } = useToast();
+
+  const handleOpenCreateForm = () => {
+    setPlanToEdit(null);
+    setIsPlanFormOpen(true);
+  };
+
+  const handleOpenEditForm = (plan: DietPlan) => {
+    setPlanToEdit(plan);
+    setIsPlanFormOpen(true);
+  };
+
+  const handleFormSubmit = (data: DietPlan) => {
+    onSavePlan(data);
+    setIsPlanFormOpen(false);
+    setPlanToEdit(null);
+    toast({ title: "Plano Alimentar Salvo!", description: `Plano "${data.name}" foi salvo com sucesso.` });
+  };
+  
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Planos Alimentares do Cliente</CardTitle>
+          <CardDescription>Gerencie e crie planos alimentares para {client.name}.</CardDescription>
+        </div>
+        <Button onClick={handleOpenCreateForm}>
+          <Icons.Add className="mr-2 h-4 w-4" /> Criar Novo Plano Alimentar
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {plans.length === 0 ? (
+          <div className="text-center py-8">
+            {/* TODO: Add a specific diet icon if available, or a generic 'document' icon */}
+            <Icons.WorkoutPlan className="h-16 w-16 text-muted-foreground mx-auto mb-4" /> 
+            <p className="text-muted-foreground">Nenhum plano alimentar criado para este cliente ainda.</p>
+            <Button onClick={handleOpenCreateForm} className="mt-4">Criar Primeiro Plano Alimentar</Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {plans.map(plan => (
+              <Card key={plan.id} className="bg-secondary/30">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    <div className="flex gap-2">
+                       <Button variant="outline" size="sm" onClick={() => handleOpenEditForm(plan)}>
+                        <Icons.Edit className="mr-2 h-4 w-4" /> Editar
+                      </Button>
+                       <Button variant="destructive" size="sm" onClick={() => onDeletePlan(plan.id)}>
+                        <Icons.Delete className="mr-2 h-4 w-4" /> Excluir
+                      </Button>
+                    </div>
+                  </div>
+                  {plan.description && <CardDescription>{plan.description}</CardDescription>}
+                </CardHeader>
+                <CardContent>
+                  {plan.meals.map((meal, mealIndex) => (
+                    <div key={mealIndex} className="mb-3 last:mb-0">
+                      <h4 className="font-semibold text-md mb-1">
+                        {meal.mealName} {meal.time && <span className="text-sm text-muted-foreground">({meal.time})</span>}
+                      </h4>
+                      <ul className="space-y-1 pl-4">
+                        {meal.items.map((item, itemIndex) => (
+                          <li key={itemIndex} className="text-sm border-b border-border/50 pb-1 last:border-b-0">
+                            <strong>{item.foodName}</strong>: {item.quantity}
+                            {item.notes && <p className="text-xs text-muted-foreground pl-2"><em>Notas: {item.notes}</em></p>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+      <Dialog open={isPlanFormOpen} onOpenChange={setIsPlanFormOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{planToEdit ? 'Editar Plano Alimentar' : 'Criar Novo Plano Alimentar'}</DialogTitle>
+            <DialogDescription>
+              {planToEdit ? `Modificando plano: ${planToEdit.name}` : `Defina um novo plano alimentar para ${client.name}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-grow pr-2">
+            <DietPlanForm 
+              client={client}
+              planToEdit={planToEdit} 
+              onSubmit={handleFormSubmit} 
+              onCancel={() => { setIsPlanFormOpen(false); setPlanToEdit(null); }} 
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -275,14 +383,17 @@ export default function ClientDetailPage() {
   const clientId = params.clientId as string;
   const [client, setClient] = useState<Client | null>(null);
   const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]);
+  const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     const foundClient = MOCK_CLIENTS.find(c => c.id === clientId);
     if (foundClient) {
       setClient(foundClient);
-      const plans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
-      setClientWorkoutPlans(plans);
+      const workoutPlans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
+      setClientWorkoutPlans(workoutPlans);
+      const dietPlans = MOCK_DIET_PLANS.filter(p => p.clientId === clientId);
+      setClientDietPlans(dietPlans);
     } else {
       router.push('/dashboard'); 
     }
@@ -296,7 +407,7 @@ export default function ClientDetailPage() {
         updatedPlans[existingPlanIndex] = planData;
         return updatedPlans;
       } else {
-        const newPlanWithId = { ...planData, id: `wp_${Date.now()}`};
+        const newPlanWithId = { ...planData, id: `wp_${Date.now()}`}; // Ensure workout plan gets an ID
         return [...prevPlans, newPlanWithId];
       }
     });
@@ -305,7 +416,28 @@ export default function ClientDetailPage() {
   const handleDeleteWorkoutPlan = (planId: string) => {
     if (window.confirm("Tem certeza que deseja excluir este plano de treino?")) {
       setClientWorkoutPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
-      toast({ title: "Plano Excluído", description: "O plano de treino foi removido.", variant: "destructive" });
+      toast({ title: "Plano de Treino Excluído", description: "O plano de treino foi removido.", variant: "destructive" });
+    }
+  };
+
+  const handleSaveDietPlan = (planData: DietPlan) => {
+    setClientDietPlans(prevPlans => {
+      const existingPlanIndex = prevPlans.findIndex(p => p.id === planData.id);
+      if (existingPlanIndex > -1) {
+        const updatedPlans = [...prevPlans];
+        updatedPlans[existingPlanIndex] = planData;
+        return updatedPlans;
+      } else {
+         const newPlanWithId = { ...planData, id: `dp_${Date.now()}`}; // Ensure diet plan gets an ID
+        return [...prevPlans, newPlanWithId];
+      }
+    });
+  };
+
+  const handleDeleteDietPlan = (planId: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este plano alimentar?")) {
+      setClientDietPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
+      toast({ title: "Plano Alimentar Excluído", description: "O plano alimentar foi removido.", variant: "destructive" });
     }
   };
 
@@ -354,18 +486,16 @@ export default function ClientDetailPage() {
             plans={clientWorkoutPlans} 
             onSavePlan={handleSaveWorkoutPlan}
             onDeletePlan={handleDeleteWorkoutPlan}
-            onEditPlan={(plan) => { /* This prop is used by WorkoutPlansSection to trigger edit mode */}}
           />
           <AiSuggestionsSection client={client} />
         </TabsContent>
         <TabsContent value="diet" className="mt-4">
-           <Card>
-            <CardHeader><CardTitle>Plano Alimentar / Dieta</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">A interface para criar e visualizar a dieta do cliente estará aqui.</p>
-              <Button><Icons.Add className="mr-2 h-4 w-4" /> Criar Dieta</Button>
-            </CardContent>
-          </Card>
+           <DietPlansSection
+            client={client}
+            plans={clientDietPlans}
+            onSavePlan={handleSaveDietPlan}
+            onDeletePlan={handleDeleteDietPlan}
+           />
         </TabsContent>
         <TabsContent value="feedback" className="mt-4">
            <Card>
@@ -377,4 +507,3 @@ export default function ClientDetailPage() {
     </div>
   );
 }
-
