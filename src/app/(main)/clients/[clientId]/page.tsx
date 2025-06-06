@@ -309,7 +309,6 @@ function DietPlansSection({ client, plans, onSavePlan, onDeletePlan }: {
       <CardContent>
         {plans.length === 0 ? (
           <div className="text-center py-8">
-            {/* TODO: Add a specific diet icon if available, or a generic 'document' icon */}
             <Icons.WorkoutPlan className="h-16 w-16 text-muted-foreground mx-auto mb-4" /> 
             <p className="text-muted-foreground">Nenhum plano alimentar criado para este cliente ainda.</p>
             <Button onClick={handleOpenCreateForm} className="mt-4">Criar Primeiro Plano Alimentar</Button>
@@ -390,6 +389,7 @@ export default function ClientDetailPage() {
     const foundClient = MOCK_CLIENTS.find(c => c.id === clientId);
     if (foundClient) {
       setClient(foundClient);
+      // Load plans from the global MOCK_WORKOUT_PLANS
       const workoutPlans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
       setClientWorkoutPlans(workoutPlans);
       const dietPlans = MOCK_DIET_PLANS.filter(p => p.clientId === clientId);
@@ -400,43 +400,61 @@ export default function ClientDetailPage() {
   }, [clientId, router]);
 
   const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
-    setClientWorkoutPlans(prevPlans => {
-      const existingPlanIndex = prevPlans.findIndex(p => p.id === planData.id);
-      if (existingPlanIndex > -1) {
-        const updatedPlans = [...prevPlans];
-        updatedPlans[existingPlanIndex] = planData;
-        return updatedPlans;
-      } else {
-        const newPlanWithId = { ...planData, id: `wp_${Date.now()}`}; // Ensure workout plan gets an ID
-        return [...prevPlans, newPlanWithId];
-      }
-    });
+    let updatedGlobalPlans;
+    const existingPlanIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id);
+
+    if (existingPlanIndex > -1) {
+      // Update existing plan in global mock data
+      MOCK_WORKOUT_PLANS[existingPlanIndex] = planData;
+      updatedGlobalPlans = [...MOCK_WORKOUT_PLANS];
+    } else {
+      // Add new plan to global mock data
+      const newPlanWithId = { ...planData, id: planData.id || `wp_${Date.now()}`};
+      MOCK_WORKOUT_PLANS.push(newPlanWithId);
+      updatedGlobalPlans = [...MOCK_WORKOUT_PLANS];
+    }
+    // Update local state to re-render
+    setClientWorkoutPlans(updatedGlobalPlans.filter(p => p.clientId === clientId));
   };
 
   const handleDeleteWorkoutPlan = (planId: string) => {
     if (window.confirm("Tem certeza que deseja excluir este plano de treino?")) {
-      setClientWorkoutPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
+      const planIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planId);
+      if (planIndex > -1) {
+        MOCK_WORKOUT_PLANS.splice(planIndex, 1);
+      }
+      // Update local state to re-render
+      setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
       toast({ title: "Plano de Treino Excluído", description: "O plano de treino foi removido.", variant: "destructive" });
     }
   };
 
   const handleSaveDietPlan = (planData: DietPlan) => {
-    setClientDietPlans(prevPlans => {
-      const existingPlanIndex = prevPlans.findIndex(p => p.id === planData.id);
-      if (existingPlanIndex > -1) {
-        const updatedPlans = [...prevPlans];
-        updatedPlans[existingPlanIndex] = planData;
-        return updatedPlans;
-      } else {
-         const newPlanWithId = { ...planData, id: `dp_${Date.now()}`}; // Ensure diet plan gets an ID
-        return [...prevPlans, newPlanWithId];
-      }
-    });
+    let updatedGlobalPlans;
+    const existingPlanIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planData.id);
+
+    if (existingPlanIndex > -1) {
+      // Update existing plan in global mock data
+      MOCK_DIET_PLANS[existingPlanIndex] = planData;
+      updatedGlobalPlans = [...MOCK_DIET_PLANS];
+    } else {
+      // Add new plan to global mock data
+      const newPlanWithId = { ...planData, id: planData.id || `dp_${Date.now()}`};
+      MOCK_DIET_PLANS.push(newPlanWithId);
+      updatedGlobalPlans = [...MOCK_DIET_PLANS];
+    }
+    // Update local state to re-render
+    setClientDietPlans(updatedGlobalPlans.filter(p => p.clientId === clientId));
   };
 
   const handleDeleteDietPlan = (planId: string) => {
     if (window.confirm("Tem certeza que deseja excluir este plano alimentar?")) {
-      setClientDietPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
+      const planIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planId);
+      if (planIndex > -1) {
+        MOCK_DIET_PLANS.splice(planIndex, 1);
+      }
+      // Update local state to re-render
+      setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
       toast({ title: "Plano Alimentar Excluído", description: "O plano alimentar foi removido.", variant: "destructive" });
     }
   };
@@ -507,3 +525,5 @@ export default function ClientDetailPage() {
     </div>
   );
 }
+
+    
