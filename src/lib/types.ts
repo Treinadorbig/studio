@@ -1,4 +1,5 @@
 
+
 export interface Client {
   id: string;
   name: string;
@@ -61,3 +62,4 @@ export interface AISuggestion {
   weight: string;
   reason: string;
 }
+

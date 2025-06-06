@@ -1,9 +1,10 @@
+
 'use client';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { MOCK_CLIENTS, MOCK_EXERCISES } from '@/lib/mock-data';
-import type { Client, AISuggestion } from '@/lib/types';
+import { MOCK_CLIENTS, MOCK_EXERCISES, MOCK_WORKOUT_PLANS } from '@/lib/mock-data';
+import type { Client, AISuggestion, WorkoutPlan, WorkoutItem } from '@/lib/types';
 import { suggestExercises, SuggestExercisesInput } from '@/ai/flows/suggest-exercises';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { WorkoutPlanForm } from '@/components/clients/workout-plan-form';
 
 
 function ClientProfileDisplay({ client }: { client: Client }) {
@@ -164,22 +167,157 @@ function AiSuggestionsSection({ client }: { client: Client }) {
   );
 }
 
+function WorkoutPlansSection({ client, plans, onSavePlan, onDeletePlan, onEditPlan }: { 
+  client: Client; 
+  plans: WorkoutPlan[];
+  onSavePlan: (plan: WorkoutPlan) => void;
+  onDeletePlan: (planId: string) => void;
+  onEditPlan: (plan: WorkoutPlan) => void;
+}) {
+  const [isPlanFormOpen, setIsPlanFormOpen] = useState(false);
+  const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
+  const { toast } = useToast();
+
+  const handleOpenCreateForm = () => {
+    setPlanToEdit(null);
+    setIsPlanFormOpen(true);
+  };
+
+  const handleOpenEditForm = (plan: WorkoutPlan) => {
+    setPlanToEdit(plan);
+    setIsPlanFormOpen(true);
+  };
+
+  const handleFormSubmit = (data: WorkoutPlan) => {
+    onSavePlan(data);
+    setIsPlanFormOpen(false);
+    setPlanToEdit(null);
+    toast({ title: "Workout Plan Saved!", description: `Plan "${data.name}" has been saved successfully.` });
+  };
+  
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Client Workout Plans</CardTitle>
+          <CardDescription>Manage and create workout routines for {client.name}.</CardDescription>
+        </div>
+        <Button onClick={handleOpenCreateForm}>
+          <Icons.Add className="mr-2 h-4 w-4" /> Create New Plan
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {plans.length === 0 ? (
+          <div className="text-center py-8">
+            <Icons.WorkoutPlan className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No workout plans created for this client yet.</p>
+            <Button onClick={handleOpenCreateForm} className="mt-4">Create First Plan</Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {plans.map(plan => (
+              <Card key={plan.id} className="bg-secondary/30">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    <div className="flex gap-2">
+                       <Button variant="outline" size="sm" onClick={() => handleOpenEditForm(plan)}>
+                        <Icons.Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                       <Button variant="destructive" size="sm" onClick={() => onDeletePlan(plan.id)}>
+                        <Icons.Delete className="mr-2 h-4 w-4" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                  {plan.description && <CardDescription>{plan.description}</CardDescription>}
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {plan.items.map((item, index) => (
+                      <li key={index} className="text-sm border-b border-border pb-1 last:border-b-0">
+                        <strong>{item.exerciseName}</strong>: {item.sets} sets of {item.reps} reps. 
+                        {item.rest && ` Rest: ${item.rest}`}
+                        {item.notes && <p className="text-xs text-muted-foreground pl-2"><em>Notes: {item.notes}</em></p>}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+      <Dialog open={isPlanFormOpen} onOpenChange={setIsPlanFormOpen}>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle>{planToEdit ? 'Edit Workout Plan' : 'Create New Workout Plan'}</DialogTitle>
+            <DialogDescription>
+              {planToEdit ? `Modifying plan: ${planToEdit.name}` : `Define a new workout routine for ${client.name}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <WorkoutPlanForm 
+            client={client}
+            planToEdit={planToEdit} 
+            onSubmit={handleFormSubmit} 
+            onCancel={() => { setIsPlanFormOpen(false); setPlanToEdit(null); }} 
+            availableExercises={MOCK_EXERCISES}
+          />
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
 
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
   const clientId = params.clientId as string;
   const [client, setClient] = useState<Client | null>(null);
+  const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const foundClient = MOCK_CLIENTS.find(c => c.id === clientId);
     if (foundClient) {
       setClient(foundClient);
+      // Load client-specific workout plans from mock data
+      const plans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
+      setClientWorkoutPlans(plans);
     } else {
-      // Handle client not found, e.g., redirect or show error
-      router.push('/dashboard'); // Or a 404 page
+      router.push('/dashboard'); 
     }
   }, [clientId, router]);
+
+  const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
+    setClientWorkoutPlans(prevPlans => {
+      const existingPlanIndex = prevPlans.findIndex(p => p.id === planData.id);
+      if (existingPlanIndex > -1) {
+        // Update existing plan
+        const updatedPlans = [...prevPlans];
+        updatedPlans[existingPlanIndex] = planData;
+        return updatedPlans;
+      } else {
+        // Add new plan
+        // For mock data, generate a simple ID
+        const newPlanWithId = { ...planData, id: `wp_${Date.now()}`};
+        return [...prevPlans, newPlanWithId];
+      }
+    });
+    // Note: In a real app, you'd persist this to a backend.
+    // For mock data, we could update MOCK_WORKOUT_PLANS if needed for global consistency,
+    // but for this component's state management, setClientWorkoutPlans is sufficient.
+  };
+
+  const handleDeleteWorkoutPlan = (planId: string) => {
+    // Basic confirm dialog
+    if (window.confirm("Are you sure you want to delete this workout plan?")) {
+      setClientWorkoutPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
+      toast({ title: "Plan Deleted", description: "The workout plan has been removed.", variant: "destructive" });
+      // Similarly, update MOCK_WORKOUT_PLANS in a real scenario or if needed globally.
+    }
+  };
+
 
   if (!client) {
     return (
@@ -219,13 +357,15 @@ export default function ClientDetailPage() {
         <TabsContent value="profile" className="mt-4">
           <ClientProfileDisplay client={client} />
         </TabsContent>
-        <TabsContent value="workout" className="mt-4">
+        <TabsContent value="workout" className="mt-4 space-y-6">
+          <WorkoutPlansSection 
+            client={client} 
+            plans={clientWorkoutPlans} 
+            onSavePlan={handleSaveWorkoutPlan}
+            onDeletePlan={handleDeleteWorkoutPlan}
+            onEditPlan={(plan) => { /* This prop is used by WorkoutPlansSection to trigger edit mode */}}
+          />
           <AiSuggestionsSection client={client} />
-          {/* Placeholder for current workout plan display and builder */}
-          <Card className="mt-6">
-            <CardHeader><CardTitle>Current Workout Plan</CardTitle></CardHeader>
-            <CardContent><p className="text-muted-foreground">Workout plan builder UI will be here.</p></CardContent>
-          </Card>
         </TabsContent>
         <TabsContent value="schedule" className="mt-4">
            <Card>
@@ -243,3 +383,4 @@ export default function ClientDetailPage() {
     </div>
   );
 }
+
