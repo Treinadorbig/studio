@@ -74,7 +74,7 @@ function TrainerDashboardContent({ clients, onAddClient }: { clients: Client[], 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-headline tracking-tight">Dashboard de Clientes</h1>
+        <h1 className="text-3xl font-headline tracking-tight">Olá, Big, tudo bem?</h1>
         <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
           <DialogTrigger asChild>
             <Button>
