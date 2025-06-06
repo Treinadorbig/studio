@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Icons } from '@/components/icons';
 import { MOCK_CLIENTS, MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS } from '@/lib/mock-data';
@@ -23,29 +23,47 @@ import { Badge } from '@/components/ui/badge';
 
 // Trainer's View Components
 function TrainerClientCard({ client }: { client: Client }) {
+  const clientWorkoutPlans = MOCK_WORKOUT_PLANS.filter(plan => plan.clientId === client.id);
+  const planSummary = clientWorkoutPlans.length > 0
+    ? clientWorkoutPlans.map(plan => {
+        let namePart = plan.name;
+        // Attempt to simplify common prefixes
+        namePart = namePart.replace(/^(Treino|Plano|Dia)\s*([A-Za-z0-9]+)\s*-\s*/i, '$2: ');
+        namePart = namePart.replace(/^(Treino|Plano|Dia)\s+/i, '');
+        
+        if (namePart.length > 20) namePart = namePart.substring(0, 17) + '...';
+        return namePart;
+      }).slice(0, 2).join(' | ') // Show max 2 summarized plans, separated by pipe
+    : 'Nenhum plano ativo';
+
+  const displayGoals = client.goals.length > 50 ? client.goals.substring(0, 47) + '...' : client.goals;
+
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 animate-fade-in">
-      <CardHeader className="flex flex-row items-center gap-4 pb-2">
-        <Avatar className="h-12 w-12">
+    <Card className="hover:shadow-md transition-shadow duration-150 animate-fade-in flex flex-col">
+      <CardHeader className="flex flex-row items-center gap-3 p-3">
+        <Avatar className="h-10 w-10">
           <AvatarImage src={client.avatarUrl} alt={client.name} data-ai-hint={client.dataAiHint || 'user avatar'} />
           <AvatarFallback>{client.name.substring(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <div>
-          <CardTitle className="text-xl font-headline">{client.name}</CardTitle>
-          <CardDescription>{client.email}</CardDescription>
-        </div>
+        <CardTitle className="text-base font-semibold font-headline flex-grow truncate">{client.name}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-1">Metas: {client.goals.substring(0,50)}...</p>
-        <p className="text-sm text-muted-foreground">Nível: {client.fitnessLevel}</p>
-        <div className="mt-4 flex justify-end">
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/clients/${client.id}`}>
-              Ver Perfil <Icons.ChevronRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+      <CardContent className="p-3 pt-0 space-y-1.5 flex-grow">
+        <div className="mb-1">
+          <p className="text-xs font-medium text-muted-foreground">Metas:</p>
+          <p className="text-xs text-foreground h-8 overflow-y-hidden">{displayGoals}</p> {/* Approx 2 lines */}
+        </div>
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Planos:</p>
+          <p className="text-xs text-foreground truncate">{planSummary}</p>
         </div>
       </CardContent>
+      <CardFooter className="p-3 pt-2 flex justify-end">
+          <Button asChild variant="ghost" size="sm" className="text-xs h-7 px-2">
+            <Link href={`/clients/${client.id}`}>
+              Detalhes <Icons.ChevronRight className="ml-1 h-3 w-3" />
+            </Link>
+          </Button>
+      </CardFooter>
     </Card>
   );
 }
@@ -89,7 +107,7 @@ function TrainerDashboardContent({ clients, onAddClient }: { clients: Client[], 
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> {/* Increased grid columns for smaller cards */}
           {clients.map((client) => (
             <TrainerClientCard key={client.id} client={client} />
           ))}
