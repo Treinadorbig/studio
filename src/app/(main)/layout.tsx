@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { MOCK_CLIENTS } from '@/lib/mock-data'; // For fetching client name
 
 const TRAINER_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard Clientes', icon: Icons.Clients },
+  { href: '/dashboard', label: 'Clientes', icon: Icons.Clients },
   { href: '/exercises', label: 'Biblioteca de Treinos', icon: Icons.Exercises },
   { href: '/schedule', label: 'Agenda Geral', icon: Icons.Schedule },
 ];
@@ -177,7 +177,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
               <Icons.Logo className="h-6 w-6" />
-              <span className="">Protocolo Big</span> {/* Changed name */}
+              <span className="">Protocolo Big</span>
             </Link>
           </div>
           <div className="flex-1 py-4">
@@ -202,7 +202,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
                   <Icons.Logo className="h-6 w-6" />
-                  <span className="">Protocolo Big</span> {/* Changed name */}
+                  <span className="">Protocolo Big</span>
                 </Link>
               </div>
               <nav className="grid gap-2 p-4 text-lg font-medium">
