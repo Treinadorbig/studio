@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,28 +38,28 @@ export function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
-      // userType: 'personal', // No default, let user select
     },
   });
 
-  // Mock login function
   async function onSubmit(values: LoginFormValues) {
-    // In a real app, you would call an authentication API here
     console.log('Login attempt with:', values);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // For demo purposes, let's assume login is successful
-    // You would typically set some auth state (e.g., in cookies or context)
-    localStorage.setItem('isAuthenticated', 'true'); // Very simple mock auth flag
-    localStorage.setItem('userType', values.userType); // Store userType for potential future use
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('userType', values.userType);
+    
+    if (values.userType === 'client') {
+      localStorage.setItem('loggedInClientEmail', values.email);
+    } else {
+      localStorage.removeItem('loggedInClientEmail'); // Clear if trainer logs in
+    }
+
 
     toast({
       title: "Login Successful",
-      description: `Welcome back to Workout Architect as a ${values.userType === 'personal' ? 'Personal Trainer' : 'Client'}!`,
+      description: `Welcome back to Treinador Big as a ${values.userType === 'personal' ? 'Personal Trainer' : 'Client'}!`,
     });
-    // For now, both redirect to dashboard. This could be customized later.
     router.push('/dashboard');
   }
 

@@ -9,19 +9,32 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { MOCK_CLIENTS } from '@/lib/mock-data'; // For fetching client name
 
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: Icons.Dashboard },
+const TRAINER_NAV_ITEMS = [
+  { href: '/dashboard', label: 'Dashboard Clientes', icon: Icons.Clients },
   { href: '/exercises', label: 'Biblioteca de Treinos', icon: Icons.Exercises },
-  { href: '/schedule', label: 'Schedule', icon: Icons.Schedule },
-  // { href: '/settings', label: 'Settings', icon: Icons.Settings },
+  { href: '/schedule', label: 'Agenda Geral', icon: Icons.Schedule },
 ];
 
-function SidebarNav() {
+const CLIENT_NAV_ITEMS = [
+  { href: '/dashboard', label: 'Meu Painel', icon: Icons.Dashboard },
+  // { href: '/my-workouts', label: 'Meus Treinos', icon: Icons.WorkoutPlan }, // Future page
+  // { href: '/my-profile', label: 'Meu Perfil', icon: Icons.Profile }, // Future page
+  { href: '/schedule', label: 'Minha Agenda', icon: Icons.Schedule },
+];
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+function SidebarNav({ navItems }: { navItems: NavItem[] }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-2 px-4">
-      {NAV_ITEMS.map((item) => (
+      {navItems.map((item) => (
         <Link key={item.label} href={item.href} legacyBehavior passHref>
           <a
             className={cn(
@@ -40,10 +53,18 @@ function SidebarNav() {
   );
 }
 
-function UserNav() {
+function UserNav({ userType, userName, userEmail, avatarUrl, avatarHint }: { 
+  userType: 'personal' | 'client' | null;
+  userName: string;
+  userEmail: string;
+  avatarUrl?: string;
+  avatarHint?: string;
+}) {
   const router = useRouter();
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('loggedInClientEmail');
     router.push('/login');
   };
 
@@ -52,28 +73,29 @@ function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="https://placehold.co/100x100.png" alt="User" data-ai-hint="user avatar" />
-            <AvatarFallback>UA</AvatarFallback>
+            <AvatarImage src={avatarUrl || "https://placehold.co/100x100.png"} alt={userName} data-ai-hint={avatarHint || "user avatar"} />
+            <AvatarFallback>{userName.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Trainer Name</p>
+            <p className="text-sm font-medium leading-none">{userName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              trainer@example.com
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/dashboard')}> {/* Placeholder for profile page */}
+        {/* Profile and Settings could lead to different pages based on userType in the future */}
+        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
           <Icons.Profile className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+          <span>{userType === 'client' ? 'Meu Perfil' : 'Profile'}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/dashboard')}> {/* Placeholder for settings page */}
+        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
           <Icons.Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+          <span>{userType === 'client' ? 'Configurações' : 'Settings'}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
@@ -87,18 +109,51 @@ function UserNav() {
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
+  const [isClientSide, setIsClientSide] = useState(false);
+  const [userType, setUserType] = useState<'personal' | 'client' | null>(null);
+  const [userName, setUserName] = useState('Usuário');
+  const [userEmail, setUserEmail] = useState('usuario@exemplo.com');
+  const [userAvatar, setUserAvatar] = useState('https://placehold.co/100x100.png');
+  const [userAvatarHint, setUserAvatarHint] = useState('user avatar');
+
 
   useEffect(() => {
-    setIsClient(true); // Ensures localStorage is accessed only on client
+    setIsClientSide(true);
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     if (!isAuthenticated) {
       router.replace('/login');
+      return;
     }
+    
+    const type = localStorage.getItem('userType') as 'personal' | 'client' | null;
+    setUserType(type);
+
+    if (type === 'client') {
+      const clientEmail = localStorage.getItem('loggedInClientEmail');
+      if (clientEmail) {
+        const clientData = MOCK_CLIENTS.find(c => c.email === clientEmail);
+        if (clientData) {
+          setUserName(clientData.name);
+          setUserEmail(clientData.email);
+          setUserAvatar(clientData.avatarUrl || 'https://placehold.co/100x100.png');
+          setUserAvatarHint(clientData.dataAiHint || 'user avatar');
+        } else {
+          setUserName('Cliente');
+          setUserEmail(clientEmail);
+        }
+      }
+    } else if (type === 'personal') {
+      setUserName('Personal Trainer');
+      setUserEmail('trainer@example.com'); // Placeholder
+      setUserAvatar('https://placehold.co/100x100.png');
+      setUserAvatarHint('trainer avatar');
+    }
+
   }, [router]);
 
-  if (!isClient) {
-     // Render nothing or a loading indicator until client-side check completes
+  const currentNavItems = userType === 'client' ? CLIENT_NAV_ITEMS : TRAINER_NAV_ITEMS;
+
+  if (!isClientSide || !userType) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Icons.Logo className="h-12 w-12 animate-spin text-primary" />
@@ -106,12 +161,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
   
-  // If still not authenticated after client check (e.g. router.replace hasn't completed)
   if (typeof window !== 'undefined' && !localStorage.getItem('isAuthenticated')) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
         <Icons.Logo className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-2">Redirecting to login...</p>
+        <p className="ml-2">Redirecionando para o login...</p>
       </div>
     );
   }
@@ -127,7 +181,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
           <div className="flex-1 py-4">
-            <SidebarNav />
+            <SidebarNav navItems={currentNavItems} />
           </div>
         </div>
       </div>
@@ -140,8 +194,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <Icons.Dashboard className="h-5 w-5" /> {/* Using Dashboard as generic menu icon */}
-                <span className="sr-only">Toggle navigation menu</span>
+                <Icons.Dashboard className="h-5 w-5" />
+                <span className="sr-only">Alternar menu de navegação</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col bg-sidebar p-0 text-sidebar-foreground">
@@ -152,7 +206,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </Link>
               </div>
               <nav className="grid gap-2 p-4 text-lg font-medium">
-                {NAV_ITEMS.map((item) => (
+                {currentNavItems.map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}
@@ -168,7 +222,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full flex-1">
             {/* Optional: Add a global search bar here */}
           </div>
-          <UserNav />
+          <UserNav userType={userType} userName={userName} userEmail={userEmail} avatarUrl={userAvatar} avatarHint={userAvatarHint} />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background overflow-auto">
           {children}
