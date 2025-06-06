@@ -23,9 +23,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkoutPlanForm } from '@/components/clients/workout-plan-form';
 import { DietPlanForm } from '@/components/clients/diet-plan-form';
+import { EditClientForm } from '@/components/clients/edit-client-form';
 
 
-function ClientProfileDisplay({ client }: { client: Client }) {
+function ClientProfileDisplay({ client, onOpenEditDialog }: { client: Client; onOpenEditDialog: () => void; }) {
   return (
     <Card>
       <CardHeader>
@@ -33,18 +34,18 @@ function ClientProfileDisplay({ client }: { client: Client }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Idade</Label><p>{client.age}</p></div>
+          <div><Label>Idade</Label><p>{client.age || 'N/A'}</p></div>
           <div><Label>Gênero</Label><p>{client.gender}</p></div>
-          <div><Label>Peso</Label><p>{client.weight} kg</p></div>
-          <div><Label>Altura</Label><p>{client.height} cm</p></div>
+          <div><Label>Peso</Label><p>{client.weight || 'N/A'} kg</p></div>
+          <div><Label>Altura</Label><p>{client.height || 'N/A'} cm</p></div>
           <div><Label>Nível de Fitness</Label><p>{client.fitnessLevel}</p></div>
         </div>
-        <div><Label>Metas</Label><p className="whitespace-pre-line">{client.goals}</p></div>
+        <div><Label>Metas</Label><p className="whitespace-pre-line">{client.goals || 'Nenhuma meta definida.'}</p></div>
         <div>
           <Label>Histórico de Treinos</Label>
           <p className="text-sm text-muted-foreground whitespace-pre-line">{client.workoutHistory || 'Nenhum histórico fornecido.'}</p>
         </div>
-        <Button variant="outline" size="sm"><Icons.Edit className="mr-2 h-4 w-4" />Editar Perfil</Button>
+        <Button variant="outline" size="sm" onClick={onOpenEditDialog}><Icons.Edit className="mr-2 h-4 w-4" />Editar Perfil</Button>
       </CardContent>
     </Card>
   );
@@ -81,6 +82,12 @@ function AiSuggestionsSection({ client }: { client: Client }) {
   );
   const [goalsInput, setGoalsInput] = useState(client.goals);
   const [historyInput, setHistoryInput] = useState(client.workoutHistory || '');
+
+   useEffect(() => {
+    setClientProfileInput(`Idade: ${client.age}, Gênero: ${client.gender}, Peso: ${client.weight}kg, Altura: ${client.height}cm, Nível de Fitness: ${client.fitnessLevel}`);
+    setGoalsInput(client.goals);
+    setHistoryInput(client.workoutHistory || '');
+  }, [client]);
 
   const handleGetSuggestions = async () => {
     setIsLoading(true);
@@ -248,14 +255,14 @@ function WorkoutPlansSection({ client, plans, onSavePlan, onDeletePlan }: {
         )}
       </CardContent>
       <Dialog open={isPlanFormOpen} onOpenChange={setIsPlanFormOpen}>
-        <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
+         <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{planToEdit ? 'Editar Plano de Treino' : 'Criar Novo Plano de Treino'}</DialogTitle>
             <DialogDescription>
               {planToEdit ? `Modificando plano: ${planToEdit.name}` : `Defina uma nova rotina de treino para ${client.name}.`}
             </DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto flex-grow pr-2">
+           <div className="overflow-y-auto flex-grow pr-2">
             <WorkoutPlanForm 
               client={client}
               planToEdit={planToEdit} 
@@ -385,6 +392,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]);
   const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]);
+  const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -400,24 +408,34 @@ export default function ClientDetailPage() {
     }
   }, [clientId, router]);
 
-  const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
-    let updatedGlobalPlans;
-    const existingPlanIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id);
+  const handleUpdateClientDetails = (updatedData: Partial<Client>) => {
+    if (!client) return;
+  
+    const clientIndex = MOCK_CLIENTS.findIndex(c => c.id === client.id);
+    if (clientIndex > -1) {
+      // Merge existing client data with updated data
+      const fullyUpdatedClient = { ...MOCK_CLIENTS[clientIndex], ...updatedData } as Client;
+      MOCK_CLIENTS[clientIndex] = fullyUpdatedClient;
+      setClient(fullyUpdatedClient); // Update local state with the full client object
+    }
+    setIsEditClientDialogOpen(false);
+    toast({ title: "Perfil Atualizado", description: `Os detalhes de ${updatedData.name} foram salvos.` });
+  };
 
+  const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
+    const existingPlanIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
     if (existingPlanIndex > -1) {
       MOCK_WORKOUT_PLANS[existingPlanIndex] = planData;
-      updatedGlobalPlans = [...MOCK_WORKOUT_PLANS];
     } else {
-      const newPlanWithId = { ...planData, id: planData.id || `wp_${Date.now()}`};
+      const newPlanWithId = { ...planData, id: planData.id || `wp_${Date.now()}_${clientId}`};
       MOCK_WORKOUT_PLANS.push(newPlanWithId);
-      updatedGlobalPlans = [...MOCK_WORKOUT_PLANS];
     }
-    setClientWorkoutPlans(updatedGlobalPlans.filter(p => p.clientId === clientId));
+    setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
   };
 
   const handleDeleteWorkoutPlan = (planId: string) => {
     if (window.confirm("Tem certeza que deseja excluir este plano de treino?")) {
-      const planIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planId);
+      const planIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
       if (planIndex > -1) {
         MOCK_WORKOUT_PLANS.splice(planIndex, 1);
       }
@@ -427,23 +445,19 @@ export default function ClientDetailPage() {
   };
 
   const handleSaveDietPlan = (planData: DietPlan) => {
-    let updatedGlobalPlans;
-    const existingPlanIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planData.id);
-
+    const existingPlanIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
     if (existingPlanIndex > -1) {
       MOCK_DIET_PLANS[existingPlanIndex] = planData;
-      updatedGlobalPlans = [...MOCK_DIET_PLANS];
     } else {
-      const newPlanWithId = { ...planData, id: planData.id || `dp_${Date.now()}`};
+      const newPlanWithId = { ...planData, id: planData.id || `dp_${Date.now()}_${clientId}`};
       MOCK_DIET_PLANS.push(newPlanWithId);
-      updatedGlobalPlans = [...MOCK_DIET_PLANS];
     }
-    setClientDietPlans(updatedGlobalPlans.filter(p => p.clientId === clientId));
+    setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
   };
 
   const handleDeleteDietPlan = (planId: string) => {
     if (window.confirm("Tem certeza que deseja excluir este plano alimentar?")) {
-      const planIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planId);
+      const planIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
       if (planIndex > -1) {
         MOCK_DIET_PLANS.splice(planIndex, 1);
       }
@@ -482,14 +496,13 @@ export default function ClientDetailPage() {
       <StudentProgressBar progress={client.progress || 0} />
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-3"> {/* Reduced to 3 cols */}
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="workout">Treinos</TabsTrigger>
           <TabsTrigger value="diet">Dieta</TabsTrigger>
-          <TabsTrigger value="feedback">Feedback</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4">
-          <ClientProfileDisplay client={client} />
+          <ClientProfileDisplay client={client} onOpenEditDialog={() => setIsEditClientDialogOpen(true)} />
         </TabsContent>
         <TabsContent value="workout" className="mt-4 space-y-6">
           <WorkoutPlansSection 
@@ -508,15 +521,23 @@ export default function ClientDetailPage() {
             onDeletePlan={handleDeleteDietPlan}
            />
         </TabsContent>
-        <TabsContent value="feedback" className="mt-4">
-           <Card>
-            <CardHeader><CardTitle>Notas do Trainer & Feedback do Cliente</CardTitle></CardHeader>
-            <CardContent><p className="text-muted-foreground">A seção de feedback e notas estará aqui.</p></CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      <Dialog open={isEditClientDialogOpen} onOpenChange={setIsEditClientDialogOpen}>
+        <DialogContent className="sm:max-w-[625px]"> {/* Consider max-h for scroll as in EditClientForm */}
+          <DialogHeader>
+            <DialogTitle>Editar Perfil do Cliente</DialogTitle>
+            {client && <DialogDescription>Modifique os detalhes de {client.name}.</DialogDescription>}
+          </DialogHeader>
+          {client && (
+            <EditClientForm
+              client={client}
+              onSubmit={handleUpdateClientDetails}
+              onCancel={() => setIsEditClientDialogOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-    
