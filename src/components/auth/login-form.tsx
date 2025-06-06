@@ -58,7 +58,7 @@ export function LoginForm() {
 
     toast({
       title: "Login Successful",
-      description: `Welcome back to Treinador Big as a ${values.userType === 'personal' ? 'Personal Trainer' : 'Client'}!`,
+      description: `Welcome back to BigTreino as a ${values.userType === 'personal' ? 'Personal Trainer' : 'Client'}!`,
     });
     router.push('/dashboard');
   }
