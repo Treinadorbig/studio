@@ -281,7 +281,6 @@ export default function ClientDetailPage() {
     const foundClient = MOCK_CLIENTS.find(c => c.id === clientId);
     if (foundClient) {
       setClient(foundClient);
-      // Load client-specific workout plans from mock data
       const plans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
       setClientWorkoutPlans(plans);
     } else {
@@ -293,28 +292,20 @@ export default function ClientDetailPage() {
     setClientWorkoutPlans(prevPlans => {
       const existingPlanIndex = prevPlans.findIndex(p => p.id === planData.id);
       if (existingPlanIndex > -1) {
-        // Update existing plan
         const updatedPlans = [...prevPlans];
         updatedPlans[existingPlanIndex] = planData;
         return updatedPlans;
       } else {
-        // Add new plan
-        // For mock data, generate a simple ID
         const newPlanWithId = { ...planData, id: `wp_${Date.now()}`};
         return [...prevPlans, newPlanWithId];
       }
     });
-    // Note: In a real app, you'd persist this to a backend.
-    // For mock data, we could update MOCK_WORKOUT_PLANS if needed for global consistency,
-    // but for this component's state management, setClientWorkoutPlans is sufficient.
   };
 
   const handleDeleteWorkoutPlan = (planId: string) => {
-    // Basic confirm dialog
     if (window.confirm("Tem certeza que deseja excluir este plano de treino?")) {
       setClientWorkoutPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
       toast({ title: "Plano Excluído", description: "O plano de treino foi removido.", variant: "destructive" });
-      // Similarly, update MOCK_WORKOUT_PLANS in a real scenario or if needed globally.
     }
   };
 
@@ -351,7 +342,7 @@ export default function ClientDetailPage() {
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="workout">Treinos</TabsTrigger>
-          <TabsTrigger value="schedule">Agenda</TabsTrigger>
+          <TabsTrigger value="diet">Dieta</TabsTrigger>
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4">
@@ -367,10 +358,13 @@ export default function ClientDetailPage() {
           />
           <AiSuggestionsSection client={client} />
         </TabsContent>
-        <TabsContent value="schedule" className="mt-4">
+        <TabsContent value="diet" className="mt-4">
            <Card>
-            <CardHeader><CardTitle>Agenda de Treinos</CardTitle></CardHeader>
-            <CardContent><p className="text-muted-foreground">A interface de agendamento e lembretes estará aqui.</p></CardContent>
+            <CardHeader><CardTitle>Plano Alimentar / Dieta</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">A interface para criar e visualizar a dieta do cliente estará aqui.</p>
+              <Button><Icons.Add className="mr-2 h-4 w-4" /> Criar Dieta</Button>
+            </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="feedback" className="mt-4">
