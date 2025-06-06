@@ -11,7 +11,7 @@ export default function LoginPage() {
             <Icons.Logo className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-3xl font-headline">Workout Architect</CardTitle>
-          <CardDescription>Sign in to manage your clients and workouts</CardDescription>
+          <CardDescription>Acesse sua conta Workout Architect</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />

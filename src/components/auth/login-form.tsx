@@ -17,10 +17,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  userType: z.enum(['personal', 'client'], {
+    required_error: "Você precisa selecionar o tipo de usuário.",
+  }),
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
@@ -33,6 +37,7 @@ export function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
+      // userType: 'personal', // No default, let user select
     },
   });
 
@@ -47,11 +52,13 @@ export function LoginForm() {
     // For demo purposes, let's assume login is successful
     // You would typically set some auth state (e.g., in cookies or context)
     localStorage.setItem('isAuthenticated', 'true'); // Very simple mock auth flag
+    localStorage.setItem('userType', values.userType); // Store userType for potential future use
 
     toast({
       title: "Login Successful",
-      description: "Welcome back to Workout Architect!",
+      description: `Welcome back to Workout Architect as a ${values.userType === 'personal' ? 'Personal Trainer' : 'Client'}!`,
     });
+    // For now, both redirect to dashboard. This could be customized later.
     router.push('/dashboard');
   }
 
@@ -60,12 +67,46 @@ export function LoginForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
+          name="userType"
+          render={({ field }) => (
+            <FormItem className="space-y-2">
+              <FormLabel>Entrar como:</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex space-x-4"
+                >
+                  <FormItem className="flex items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="personal" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Personal Trainer
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="client" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Cliente
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="you@example.com" {...field} />
+                <Input type="email" placeholder="voce@exemplo.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -76,7 +117,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Senha</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
@@ -90,7 +131,7 @@ export function LoginForm() {
           ) : (
             <Icons.Login className="mr-2 h-4 w-4" />
           )}
-          Sign In
+          Entrar
         </Button>
       </form>
     </Form>
