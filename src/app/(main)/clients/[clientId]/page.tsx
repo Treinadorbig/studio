@@ -248,20 +248,22 @@ function WorkoutPlansSection({ client, plans, onSavePlan, onDeletePlan }: {
         )}
       </CardContent>
       <Dialog open={isPlanFormOpen} onOpenChange={setIsPlanFormOpen}>
-        <DialogContent className="sm:max-w-[625px]">
+        <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{planToEdit ? 'Editar Plano de Treino' : 'Criar Novo Plano de Treino'}</DialogTitle>
             <DialogDescription>
               {planToEdit ? `Modificando plano: ${planToEdit.name}` : `Defina uma nova rotina de treino para ${client.name}.`}
             </DialogDescription>
           </DialogHeader>
-          <WorkoutPlanForm 
-            client={client}
-            planToEdit={planToEdit} 
-            onSubmit={handleFormSubmit} 
-            onCancel={() => { setIsPlanFormOpen(false); setPlanToEdit(null); }} 
-            availableExercises={MOCK_EXERCISES}
-          />
+          <div className="overflow-y-auto flex-grow pr-2">
+            <WorkoutPlanForm 
+              client={client}
+              planToEdit={planToEdit} 
+              onSubmit={handleFormSubmit} 
+              onCancel={() => { setIsPlanFormOpen(false); setPlanToEdit(null); }} 
+              availableExercises={MOCK_EXERCISES}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
@@ -389,7 +391,6 @@ export default function ClientDetailPage() {
     const foundClient = MOCK_CLIENTS.find(c => c.id === clientId);
     if (foundClient) {
       setClient(foundClient);
-      // Load plans from the global MOCK_WORKOUT_PLANS
       const workoutPlans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
       setClientWorkoutPlans(workoutPlans);
       const dietPlans = MOCK_DIET_PLANS.filter(p => p.clientId === clientId);
@@ -404,16 +405,13 @@ export default function ClientDetailPage() {
     const existingPlanIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id);
 
     if (existingPlanIndex > -1) {
-      // Update existing plan in global mock data
       MOCK_WORKOUT_PLANS[existingPlanIndex] = planData;
       updatedGlobalPlans = [...MOCK_WORKOUT_PLANS];
     } else {
-      // Add new plan to global mock data
       const newPlanWithId = { ...planData, id: planData.id || `wp_${Date.now()}`};
       MOCK_WORKOUT_PLANS.push(newPlanWithId);
       updatedGlobalPlans = [...MOCK_WORKOUT_PLANS];
     }
-    // Update local state to re-render
     setClientWorkoutPlans(updatedGlobalPlans.filter(p => p.clientId === clientId));
   };
 
@@ -423,7 +421,6 @@ export default function ClientDetailPage() {
       if (planIndex > -1) {
         MOCK_WORKOUT_PLANS.splice(planIndex, 1);
       }
-      // Update local state to re-render
       setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
       toast({ title: "Plano de Treino Excluído", description: "O plano de treino foi removido.", variant: "destructive" });
     }
@@ -434,16 +431,13 @@ export default function ClientDetailPage() {
     const existingPlanIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planData.id);
 
     if (existingPlanIndex > -1) {
-      // Update existing plan in global mock data
       MOCK_DIET_PLANS[existingPlanIndex] = planData;
       updatedGlobalPlans = [...MOCK_DIET_PLANS];
     } else {
-      // Add new plan to global mock data
       const newPlanWithId = { ...planData, id: planData.id || `dp_${Date.now()}`};
       MOCK_DIET_PLANS.push(newPlanWithId);
       updatedGlobalPlans = [...MOCK_DIET_PLANS];
     }
-    // Update local state to re-render
     setClientDietPlans(updatedGlobalPlans.filter(p => p.clientId === clientId));
   };
 
@@ -453,7 +447,6 @@ export default function ClientDetailPage() {
       if (planIndex > -1) {
         MOCK_DIET_PLANS.splice(planIndex, 1);
       }
-      // Update local state to re-render
       setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
       toast({ title: "Plano Alimentar Excluído", description: "O plano alimentar foi removido.", variant: "destructive" });
     }
