@@ -18,7 +18,7 @@ const TRAINER_NAV_ITEMS = [
 ];
 
 const CLIENT_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Meu Painel', icon: Icons.Dashboard },
+  { href: '/dashboard', label: 'Meus Treinos', icon: Icons.Dashboard },
   // { href: '/my-workouts', label: 'Meus Treinos', icon: Icons.WorkoutPlan }, // Future page
   // { href: '/my-profile', label: 'Meu Perfil', icon: Icons.Profile }, // Future page
   { href: '/schedule', label: 'Minha Agenda', icon: Icons.Schedule },
