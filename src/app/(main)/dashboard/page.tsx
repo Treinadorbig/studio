@@ -39,7 +39,7 @@ function TrainerClientCard({ client }: { client: Client }) {
   const displayGoals = client.goals.length > 50 ? client.goals.substring(0, 47) + '...' : client.goals;
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-150 animate-fade-in flex flex-col">
+    <Card className="hover:shadow-md transition-shadow duration-150 animate-fade-in flex flex-col w-full">
       <CardHeader className="flex flex-row items-center gap-3 p-3">
         <Avatar className="h-10 w-10">
           <AvatarImage src={client.avatarUrl} alt={client.name} data-ai-hint={client.dataAiHint || 'user avatar'} />
@@ -107,7 +107,7 @@ function TrainerDashboardContent({ clients, onAddClient }: { clients: Client[], 
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"> {/* Increased grid columns for smaller cards */}
+        <div className="grid grid-cols-1 gap-3 sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto">
           {clients.map((client) => (
             <TrainerClientCard key={client.id} client={client} />
           ))}
@@ -286,6 +286,8 @@ export default function DashboardPage() {
         setClientDietPlans([]);
       }
     } else {
+      // For trainer, ensure MOCK_CLIENTS is up-to-date if it can be modified elsewhere
+      setClients([...MOCK_CLIENTS]);
       setCurrentClient(null);
       setClientWorkoutPlans([]);
       setClientDietPlans([]);
@@ -308,8 +310,8 @@ export default function DashboardPage() {
       workoutHistory: 'Sem histórico ainda.',
       progress: 0,
     };
-    setClients(prevClients => [...prevClients, newClient]);
-    MOCK_CLIENTS.push(newClient); // Also update the mock source directly
+    MOCK_CLIENTS.push(newClient); 
+    setClients([...MOCK_CLIENTS]);
     toast({
       title: "Cliente Adicionado!",
       description: `${newClient.name} foi adicionado. A senha padrão para o primeiro acesso é "changeme".`,
@@ -340,3 +342,5 @@ export default function DashboardPage() {
       </div>
   );
 }
+
+    
