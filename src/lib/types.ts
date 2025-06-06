@@ -28,8 +28,8 @@ export interface Exercise {
 }
 
 export interface WorkoutItem {
-  exerciseId: string;
-  exerciseName: string; // Denormalized for easy display
+  exerciseId?: string; // Tornou-se opcional
+  exerciseName: string; // Nome do exercício, seja da biblioteca ou customizado
   sets: number;
   reps: string; // Can be a range like "8-12" or a number
   rest?: string; // e.g., "60s"
@@ -84,3 +84,4 @@ export interface DietPlan {
   meals: DietMeal[];
   createdAt: string; // ISO Date string
 }
+
