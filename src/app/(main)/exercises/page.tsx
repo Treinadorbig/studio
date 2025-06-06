@@ -96,6 +96,8 @@ export default function ExercisesPage() {
       dataAiHint: newExerciseData.dataAiHint || 'exercise generic',
     };
     setExercises(prevExercises => [newExercise, ...prevExercises]);
+    // Update MOCK_EXERCISES as well so it persists across navigation if needed for WorkoutPlanForm
+    MOCK_EXERCISES.unshift(newExercise); 
     setIsAddExerciseDialogOpen(false);
     toast({
       title: "Exercício Adicionado!",
@@ -125,14 +127,16 @@ export default function ExercisesPage() {
                 Adicionar Exercício
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[525px]">
+            <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>Adicionar Novo Exercício</DialogTitle>
                 <DialogDescription>
                   Preencha os detalhes do novo exercício para adicioná-lo à biblioteca.
                 </DialogDescription>
               </DialogHeader>
-              <AddExerciseForm onSubmit={handleAddExercise} onCancel={() => setIsAddExerciseDialogOpen(false)} />
+              <div className="overflow-y-auto flex-grow pr-2">
+                <AddExerciseForm onSubmit={handleAddExercise} onCancel={() => setIsAddExerciseDialogOpen(false)} />
+              </div>
             </DialogContent>
           </Dialog>
         </div>
