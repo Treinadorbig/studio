@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +20,7 @@ import {
   ArrowLeft,
   Activity,
   HeartPulse, // Added for new logo
+  Apple, // Added for Diet Plans
   type LucideProps,
 } from 'lucide-react';
 
@@ -40,6 +42,7 @@ export const Icons = {
   Search,
   Feedback: MessageSquare,
   WorkoutPlan: ClipboardList,
+  Diet: Apple, // Added Diet Icon
   Brain,
   ArrowLeft,
   Activity,

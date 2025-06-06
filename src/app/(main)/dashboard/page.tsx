@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Icons } from '@/components/icons';
-import { MOCK_CLIENTS, MOCK_WORKOUT_PLANS } from '@/lib/mock-data';
-import type { Client, WorkoutPlan, WorkoutItem } from '@/lib/types';
+import { MOCK_CLIENTS, MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS } from '@/lib/mock-data';
+import type { Client, WorkoutPlan, DietPlan, DietMeal } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -126,7 +126,40 @@ function ClientWorkoutPlanCard({ plan }: { plan: WorkoutPlan }) {
   );
 }
 
-function ClientDashboardContent({ client, clientPlans }: { client: Client | null, clientPlans: WorkoutPlan[] }) {
+function ClientDietPlanCard({ plan }: { plan: DietPlan }) {
+  return (
+    <Card className="bg-card hover:shadow-md transition-shadow">
+      <CardHeader>
+        <CardTitle className="text-xl font-headline">{plan.name}</CardTitle>
+        {plan.description && <CardDescription>{plan.description}</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        <h4 className="font-semibold mb-2 text-sm">Refeições Principais:</h4>
+        {plan.meals.length > 0 ? (
+          <ul className="space-y-1">
+            {plan.meals.slice(0, 3).map((meal, index) => ( // Show first 3 meals as a summary
+              <li key={index} className="text-sm">
+                <Badge variant="secondary" className="mr-2">{meal.time || 'N/A'}</Badge> {meal.mealName}
+              </li>
+            ))}
+            {plan.meals.length > 3 && <li className="text-sm text-muted-foreground">...e mais.</li>}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">Nenhuma refeição detalhada neste plano.</p>
+        )}
+        <Button variant="outline" size="sm" className="mt-4">
+          <Icons.Diet className="mr-2 h-4 w-4" /> Ver Detalhes da Dieta
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ClientDashboardContent({ client, clientWorkoutPlans, clientDietPlans }: { 
+  client: Client | null, 
+  clientWorkoutPlans: WorkoutPlan[],
+  clientDietPlans: DietPlan[],
+}) {
   if (!client) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-10 text-center">
@@ -140,7 +173,7 @@ function ClientDashboardContent({ client, clientPlans }: { client: Client | null
     <div className="space-y-8 animate-fade-in">
       <div>
         <h1 className="text-4xl font-bold tracking-tight font-headline">Bem-vindo(a), {client.name}!</h1>
-        <p className="text-lg text-muted-foreground">Seu painel personalizado no Treinador Big.</p>
+        <p className="text-lg text-muted-foreground">Seu painel personalizado no Protocolo Big.</p>
       </div>
 
       <Card>
@@ -172,14 +205,28 @@ function ClientDashboardContent({ client, clientPlans }: { client: Client | null
 
       <div>
         <h2 className="text-2xl font-semibold mb-4 flex items-center"><Icons.WorkoutPlan className="mr-2 h-7 w-7 text-primary" /> Meus Planos de Treino</h2>
-        {clientPlans.length > 0 ? (
+        {clientWorkoutPlans.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-            {clientPlans.map(plan => <ClientWorkoutPlanCard key={plan.id} plan={plan} />)}
+            {clientWorkoutPlans.map(plan => <ClientWorkoutPlanCard key={plan.id} plan={plan} />)}
           </div>
         ) : (
           <Card className="p-6 text-center">
             <Icons.WorkoutPlan className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">Nenhum plano de treino atribuído ainda. Fale com seu personal trainer!</p>
+          </Card>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-semibold mb-4 flex items-center"><Icons.Diet className="mr-2 h-7 w-7 text-primary" /> Meus Planos Alimentares</h2>
+        {clientDietPlans.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            {clientDietPlans.map(plan => <ClientDietPlanCard key={plan.id} plan={plan} />)}
+          </div>
+        ) : (
+          <Card className="p-6 text-center">
+            <Icons.Diet className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">Nenhum plano alimentar atribuído ainda. Fale com seu personal trainer!</p>
           </Card>
         )}
       </div>
@@ -193,6 +240,7 @@ export default function DashboardPage() {
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS); // For trainer
   const [currentClient, setCurrentClient] = useState<Client | null>(null); // For client
   const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]); // For client
+  const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]); // For client
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -206,18 +254,23 @@ export default function DashboardPage() {
         const foundClient = MOCK_CLIENTS.find(c => c.email.toLowerCase() === clientEmail.toLowerCase());
         setCurrentClient(foundClient || null);
         if (foundClient) {
-          const plans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === foundClient.id);
-          setClientWorkoutPlans(plans);
+          const workoutPlans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === foundClient.id);
+          setClientWorkoutPlans(workoutPlans);
+          const dietPlans = MOCK_DIET_PLANS.filter(p => p.clientId === foundClient.id);
+          setClientDietPlans(dietPlans);
         } else {
           setClientWorkoutPlans([]); 
+          setClientDietPlans([]);
         }
       } else {
         setCurrentClient(null);
         setClientWorkoutPlans([]);
+        setClientDietPlans([]);
       }
     } else {
       setCurrentClient(null);
       setClientWorkoutPlans([]);
+      setClientDietPlans([]);
     }
     setIsLoading(false);
   }, []);
@@ -238,6 +291,7 @@ export default function DashboardPage() {
       progress: 0,
     };
     setClients(prevClients => [...prevClients, newClient]);
+    MOCK_CLIENTS.push(newClient); // Also update the mock source directly
     toast({
       title: "Cliente Adicionado!",
       description: `${newClient.name} foi adicionado. A senha padrão para o primeiro acesso é "changeme".`,
@@ -254,7 +308,7 @@ export default function DashboardPage() {
   }
 
   if (userType === 'client') {
-    return <ClientDashboardContent client={currentClient} clientPlans={clientWorkoutPlans} />;
+    return <ClientDashboardContent client={currentClient} clientWorkoutPlans={clientWorkoutPlans} clientDietPlans={clientDietPlans} />;
   }
 
   if (userType === 'personal') {
@@ -268,4 +322,3 @@ export default function DashboardPage() {
       </div>
   );
 }
-
