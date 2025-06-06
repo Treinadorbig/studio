@@ -136,8 +136,10 @@ function ClientWorkoutPlanCard({ plan }: { plan: WorkoutPlan }) {
             </li>
           ))}
         </ul>
-        <Button variant="outline" size="sm" className="mt-4">
-          <Icons.WorkoutPlan className="mr-2 h-4 w-4" /> Ver Detalhes do Treino
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href={`/clients/${plan.clientId}#workout`}>
+            <Icons.WorkoutPlan className="mr-2 h-4 w-4" /> Ver Detalhes do Treino
+          </Link>
         </Button>
       </CardContent>
     </Card>
@@ -165,8 +167,10 @@ function ClientDietPlanCard({ plan }: { plan: DietPlan }) {
         ) : (
           <p className="text-sm text-muted-foreground">Nenhuma refeição detalhada neste plano.</p>
         )}
-        <Button variant="outline" size="sm" className="mt-4">
-          <Icons.Diet className="mr-2 h-4 w-4" /> Ver Detalhes da Dieta
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href={`/clients/${plan.clientId}#diet`}>
+            <Icons.Diet className="mr-2 h-4 w-4" /> Ver Detalhes da Dieta
+          </Link>
         </Button>
       </CardContent>
     </Card>
@@ -255,10 +259,10 @@ function ClientDashboardContent({ client, clientWorkoutPlans, clientDietPlans }:
 
 export default function DashboardPage() {
   const [userType, setUserType] = useState<'personal' | 'client' | null>(null);
-  const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS); // For trainer
-  const [currentClient, setCurrentClient] = useState<Client | null>(null); // For client
-  const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]); // For client
-  const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]); // For client
+  const [clients, setClients] = useState<Client[]>([]); 
+  const [currentClient, setCurrentClient] = useState<Client | null>(null); 
+  const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]); 
+  const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -286,7 +290,6 @@ export default function DashboardPage() {
         setClientDietPlans([]);
       }
     } else {
-      // For trainer, ensure MOCK_CLIENTS is up-to-date if it can be modified elsewhere
       setClients([...MOCK_CLIENTS]);
       setCurrentClient(null);
       setClientWorkoutPlans([]);
@@ -311,7 +314,7 @@ export default function DashboardPage() {
       progress: 0,
     };
     MOCK_CLIENTS.push(newClient); 
-    setClients([...MOCK_CLIENTS]);
+    setClients([...MOCK_CLIENTS]); // Important: Create a new array reference
     toast({
       title: "Cliente Adicionado!",
       description: `${newClient.name} foi adicionado. A senha padrão para o primeiro acesso é "changeme".`,
@@ -342,5 +345,7 @@ export default function DashboardPage() {
       </div>
   );
 }
+
+    
 
     

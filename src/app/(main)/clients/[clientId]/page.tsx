@@ -318,7 +318,7 @@ function DietPlansSection({ client, plans, onSavePlan, onDeletePlan }: {
       <CardContent>
         {plans.length === 0 ? (
           <div className="text-center py-8">
-            <Icons.WorkoutPlan className="h-16 w-16 text-muted-foreground mx-auto mb-4" /> 
+            <Icons.Diet className="h-16 w-16 text-muted-foreground mx-auto mb-4" /> 
             <p className="text-muted-foreground">Nenhum plano alimentar criado para este cliente ainda.</p>
             <Button onClick={handleOpenCreateForm} className="mt-4">Criar Primeiro Plano Alimentar</Button>
           </div>
@@ -393,6 +393,7 @@ export default function ClientDetailPage() {
   const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]);
   const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]);
   const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -403,23 +404,35 @@ export default function ClientDetailPage() {
       setClientWorkoutPlans(workoutPlans);
       const dietPlans = MOCK_DIET_PLANS.filter(p => p.clientId === clientId);
       setClientDietPlans(dietPlans);
+
+      // Handle tab selection from URL hash
+      if (typeof window !== 'undefined') {
+        const hash = window.location.hash.substring(1);
+        if (hash === 'workout' || hash === 'diet' || hash === 'profile') {
+          setActiveTab(hash);
+        }
+      }
+
     } else {
+      // Optionally, show a toast message or redirect if client not found
+      // For now, just pushing to dashboard which might not be ideal if accessed via direct link.
+      // Consider a dedicated 404 or error page in a real app.
       router.push('/dashboard'); 
     }
   }, [clientId, router]);
+
 
   const handleUpdateClientDetails = (updatedData: Partial<Client>) => {
     if (!client) return;
   
     const clientIndex = MOCK_CLIENTS.findIndex(c => c.id === client.id);
     if (clientIndex > -1) {
-      // Merge existing client data with updated data
       const fullyUpdatedClient = { ...MOCK_CLIENTS[clientIndex], ...updatedData } as Client;
       MOCK_CLIENTS[clientIndex] = fullyUpdatedClient;
-      setClient(fullyUpdatedClient); // Update local state with the full client object
+      setClient(fullyUpdatedClient); 
     }
     setIsEditClientDialogOpen(false);
-    toast({ title: "Perfil Atualizado", description: `Os detalhes de ${updatedData.name} foram salvos.` });
+    toast({ title: "Perfil Atualizado", description: `Os detalhes de ${updatedData.name || client.name} foram salvos.` });
   };
 
   const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
@@ -495,8 +508,8 @@ export default function ClientDetailPage() {
       
       <StudentProgressBar progress={client.progress || 0} />
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-3"> {/* Reduced to 3 cols */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-3"> 
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="workout">Treinos</TabsTrigger>
           <TabsTrigger value="diet">Dieta</TabsTrigger>
@@ -524,7 +537,7 @@ export default function ClientDetailPage() {
       </Tabs>
 
       <Dialog open={isEditClientDialogOpen} onOpenChange={setIsEditClientDialogOpen}>
-        <DialogContent className="sm:max-w-[625px]"> {/* Consider max-h for scroll as in EditClientForm */}
+        <DialogContent className="sm:max-w-[625px]"> 
           <DialogHeader>
             <DialogTitle>Editar Perfil do Cliente</DialogTitle>
             {client && <DialogDescription>Modifique os detalhes de {client.name}.</DialogDescription>}
@@ -541,3 +554,5 @@ export default function ClientDetailPage() {
     </div>
   );
 }
+
+    
