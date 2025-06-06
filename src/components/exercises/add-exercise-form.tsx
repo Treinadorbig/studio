@@ -22,7 +22,7 @@ import type { Exercise } from '@/lib/types';
 
 const addExerciseFormSchema = z.object({
   name: z.string().min(2, { message: 'Nome do exercício deve ter pelo menos 2 caracteres.' }),
-  description: z.string().min(10, { message: 'Descrição deve ter pelo menos 10 caracteres.' }),
+  description: z.string().optional(), // Tornando a descrição opcional
   muscleGroups: z.string().min(3, { message: 'Informe ao menos um grupo muscular.' }), // Comma-separated
   equipmentNeeded: z.string().optional(), // Comma-separated
   difficulty: z.enum(['Beginner', 'Intermediate', 'Advanced'], { required_error: 'Selecione a dificuldade.'}),
@@ -59,6 +59,7 @@ export function AddExerciseForm({ onSubmit, onCancel }: AddExerciseFormProps) {
       ...values,
       muscleGroups: muscleGroupsArray,
       equipmentNeeded: equipmentNeededArray,
+      description: values.description || '', // Garantir que seja uma string vazia se undefined
     });
     form.reset(); 
   };
@@ -84,7 +85,7 @@ export function AddExerciseForm({ onSubmit, onCancel }: AddExerciseFormProps) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descrição</FormLabel>
+              <FormLabel>Descrição (Opcional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="Descreva como realizar o exercício, postura, etc." {...field} rows={3} />
               </FormControl>
