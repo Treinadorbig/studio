@@ -177,7 +177,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
               <Icons.Logo className="h-6 w-6" />
-              <span className="">Treinador Big</span>
+              <span className="">Protocolo Big</span> {/* Changed name */}
             </Link>
           </div>
           <div className="flex-1 py-4">
@@ -202,7 +202,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
                   <Icons.Logo className="h-6 w-6" />
-                  <span className="">Treinador Big</span>
+                  <span className="">Protocolo Big</span> {/* Changed name */}
                 </Link>
               </div>
               <nav className="grid gap-2 p-4 text-lg font-medium">

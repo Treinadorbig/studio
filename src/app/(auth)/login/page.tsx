@@ -10,8 +10,8 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <Icons.Logo className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-3xl font-headline">Treinador Big</CardTitle>
-          <CardDescription>Acesse sua conta Treinador Big</CardDescription>
+          <CardTitle className="text-3xl font-headline">Protocolo Big</CardTitle> 
+          <CardDescription>Acesse sua conta Protocolo Big</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />

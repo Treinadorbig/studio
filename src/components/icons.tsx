@@ -18,14 +18,15 @@ import {
   Brain,
   ArrowLeft,
   Activity,
+  HeartPulse, // Added for new logo
   type LucideProps,
 } from 'lucide-react';
 
 export const Icons = {
-  Logo: (props: LucideProps) => <Dumbbell {...props} />,
+  Logo: (props: LucideProps) => <HeartPulse {...props} />, // Changed to HeartPulse
   Dashboard: LayoutDashboard,
   Clients: Users,
-  Exercises: Dumbbell,
+  Exercises: Dumbbell, // Keeping Dumbbell for exercises context
   Schedule: CalendarDays,
   Settings,
   Login: LogIn,

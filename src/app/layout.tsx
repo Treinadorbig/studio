@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Treinador Big',
+  title: 'Protocolo Big', // Changed name
   description: 'Personalized workout planning for trainers and clients.',
 };
 
