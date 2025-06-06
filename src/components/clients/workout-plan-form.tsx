@@ -108,9 +108,9 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Plan Name</FormLabel>
+              <FormLabel>Nome do Plano</FormLabel>
               <FormControl>
-                <Input placeholder="E.g., Treino A - Foco Peito" {...field} />
+                <Input placeholder="Ex: Treino A - Foco Peito" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -121,9 +121,9 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (Optional)</FormLabel>
+              <FormLabel>Descrição (Opcional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Brief description of the plan's focus or goals." {...field} />
+                <Textarea placeholder="Breve descrição do foco ou objetivos do plano." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -131,7 +131,7 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
         />
 
         <div className="space-y-2">
-          <FormLabel>Exercises</FormLabel>
+          <FormLabel>Exercícios</FormLabel>
            {form.formState.errors.items && !form.formState.errors.items.length && (
              <p className="text-sm font-medium text-destructive">{form.formState.errors.items.message}</p>
            )}
@@ -139,9 +139,9 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
             {fields.map((field, index) => (
               <div key={field.id} className="p-3 mb-3 border rounded-md bg-muted/50 space-y-3">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium">Exercise #{index + 1}</h4>
+                  <h4 className="font-medium">Exercício #{index + 1}</h4>
                   <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
-                    <Icons.Delete className="h-4 w-4 mr-1" /> Remove
+                    <Icons.Delete className="h-4 w-4 mr-1" /> Remover
                   </Button>
                 </div>
                 
@@ -150,7 +150,7 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
                   name={`items.${index}.exerciseId`}
                   render={({ field: selectField }) => (
                     <FormItem>
-                      <FormLabel>Exercise</FormLabel>
+                      <FormLabel>Exercício</FormLabel>
                       <Select 
                         onValueChange={(value) => {
                           selectField.onChange(value); // RHF updates its internal state
@@ -160,7 +160,7 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select an exercise" />
+                            <SelectValue placeholder="Selecione um exercício" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -182,7 +182,7 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
                     name={`items.${index}.sets`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Sets</FormLabel>
+                        <FormLabel>Séries</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="3" {...field} />
                         </FormControl>
@@ -195,7 +195,7 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
                     name={`items.${index}.reps`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Reps</FormLabel>
+                        <FormLabel>Repetições</FormLabel>
                         <FormControl>
                           <Input placeholder="8-12" {...field} />
                         </FormControl>
@@ -209,7 +209,7 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
                     name={`items.${index}.rest`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rest Time (Optional)</FormLabel>
+                        <FormLabel>Tempo de Descanso (Opcional)</FormLabel>
                         <FormControl>
                           <Input placeholder="60s" {...field} />
                         </FormControl>
@@ -222,9 +222,9 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
                   name={`items.${index}.notes`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Notes (Optional)</FormLabel>
+                      <FormLabel>Observações (Opcional)</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="E.g., focus on form, slow negatives" {...field} rows={2} />
+                        <Textarea placeholder="Ex: focar na forma, negativas lentas" {...field} rows={2} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -234,19 +234,19 @@ export function WorkoutPlanForm({ client, planToEdit, onSubmit, onCancel, availa
             ))}
           </ScrollArea>
           <Button type="button" variant="outline" onClick={handleAddExercise}>
-            <Icons.Add className="mr-2 h-4 w-4" /> Add Exercise
+            <Icons.Add className="mr-2 h-4 w-4" /> Adicionar Exercício
           </Button>
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? (
               <Icons.Activity className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            Save Plan
+            Salvar Plano
           </Button>
         </div>
       </form>
