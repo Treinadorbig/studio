@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader, // Added
+  SheetTitle,  // Added
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -199,13 +205,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col bg-sidebar p-0 text-sidebar-foreground">
-              <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
+              <SheetHeader className="border-b border-sidebar-border px-4 py-4">
+                <SheetTitle className="text-lg font-semibold text-sidebar-foreground">Menu Principal</SheetTitle>
+              </SheetHeader>
+              <div className="flex h-14 items-center border-b border-sidebar-border px-4">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
                   <Icons.Logo className="h-6 w-6" />
                   <span className="">BigTreino</span>
                 </Link>
               </div>
-              <nav className="grid gap-2 p-4 text-lg font-medium">
+              <nav className="flex-1 space-y-1 p-4 text-lg font-medium">
                 {currentNavItems.map((item) => (
                   <Link
                     key={item.label}
@@ -231,3 +240,4 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
+
