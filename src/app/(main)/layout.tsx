@@ -131,7 +131,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (type === 'client') {
       const clientEmail = localStorage.getItem('loggedInClientEmail');
       if (clientEmail) {
-        const clientData = MOCK_CLIENTS.find(c => c.email === clientEmail);
+        const clientData = MOCK_CLIENTS.find(c => c.email.toLowerCase() === clientEmail.toLowerCase());
         if (clientData) {
           setUserName(clientData.name);
           setUserEmail(clientData.email);

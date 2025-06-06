@@ -203,13 +203,21 @@ export default function DashboardPage() {
     if (type === 'client') {
       const clientEmail = localStorage.getItem('loggedInClientEmail');
       if (clientEmail) {
-        const foundClient = MOCK_CLIENTS.find(c => c.email === clientEmail);
+        const foundClient = MOCK_CLIENTS.find(c => c.email.toLowerCase() === clientEmail.toLowerCase());
         setCurrentClient(foundClient || null);
         if (foundClient) {
           const plans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === foundClient.id);
           setClientWorkoutPlans(plans);
+        } else {
+          setClientWorkoutPlans([]); 
         }
+      } else {
+        setCurrentClient(null);
+        setClientWorkoutPlans([]);
       }
+    } else {
+      setCurrentClient(null);
+      setClientWorkoutPlans([]);
     }
     setIsLoading(false);
   }, []);
