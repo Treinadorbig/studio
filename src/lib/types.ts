@@ -14,6 +14,7 @@ export interface Client {
   dataAiHint?: string;
   workoutHistory?: string; // Simple text for now, could be structured
   progress?: number; // Percentage 0-100
+  createdAt?: any; // Used for Firestore serverTimestamp, will be Date on client
 }
 
 export interface Exercise {
