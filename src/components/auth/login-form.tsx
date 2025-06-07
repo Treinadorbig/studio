@@ -19,10 +19,11 @@ import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { MOCK_CLIENTS } from '@/lib/mock-data'; // Import MOCK_CLIENTS to check against
 
 const loginFormSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  email: z.string().email({ message: 'Por favor, insira um endereço de e-mail válido.' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   userType: z.enum(['personal', 'client'], {
     required_error: "Você precisa selecionar o tipo de usuário.",
   }),
@@ -38,29 +39,56 @@ export function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
+      userType: 'client', // Default to client
     },
   });
 
   async function onSubmit(values: LoginFormValues) {
     console.log('Login attempt with:', values);
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
 
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('userType', values.userType);
-    
-    if (values.userType === 'client') {
-      localStorage.setItem('loggedInClientEmail', values.email);
-    } else {
-      localStorage.removeItem('loggedInClientEmail'); // Clear if trainer logs in
+    let loginSuccessful = false;
+    let userName = 'Usuário';
+
+    if (values.userType === 'personal') {
+      // For personal trainer, any email with "changeme" password works for this prototype
+      if (values.password === 'changeme') {
+        loginSuccessful = true;
+        userName = 'Personal Trainer';
+      }
+    } else if (values.userType === 'client') {
+      const client = MOCK_CLIENTS.find(c => c.email.toLowerCase() === values.email.toLowerCase());
+      if (client) {
+        // For this prototype, all clients (original or newly created) log in with "changeme"
+        if (values.password === 'changeme') {
+          loginSuccessful = true;
+          userName = client.name;
+          localStorage.setItem('loggedInClientEmail', client.email);
+        }
+      }
     }
 
+    if (loginSuccessful) {
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userType', values.userType);
+      
+      if (values.userType === 'personal') {
+        localStorage.removeItem('loggedInClientEmail'); 
+      }
 
-    toast({
-      title: "Login Successful",
-      description: `Welcome back to BigTreino as a ${values.userType === 'personal' ? 'Personal Trainer' : 'Client'}!`,
-    });
-    router.push('/dashboard');
+      toast({
+        title: "Login bem-sucedido!",
+        description: `Bem-vindo(a) de volta ao BigTreino, ${userName}!`,
+      });
+      router.push('/dashboard');
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Falha no Login",
+        description: "Email ou senha incorretos, ou tipo de usuário inválido.",
+      });
+    }
   }
 
   return (
@@ -128,7 +156,7 @@ export function LoginForm() {
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (
-            <Icons.Login className="mr-2 h-4 w-4 animate-spin" />
+            <Icons.Activity className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Icons.Login className="mr-2 h-4 w-4" />
           )}
