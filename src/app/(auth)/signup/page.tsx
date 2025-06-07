@@ -2,7 +2,7 @@
 import { SignUpForm } from '@/components/auth/signup-form';
 import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
+// Link import removed as it's no longer used
 
 export default function SignUpPage() {
   return (
@@ -17,12 +17,7 @@ export default function SignUpPage() {
         </CardHeader>
         <CardContent>
           <SignUpForm />
-          <p className="mt-6 text-center text-sm">
-            Já tem uma conta?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              Faça login
-            </Link>
-          </p>
+          {/* Removed the link to the login page */}
         </CardContent>
       </Card>
     </div>

@@ -8,14 +8,19 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
-  SheetHeader, // Added
-  SheetTitle,  // Added
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { MOCK_CLIENTS } from '@/lib/mock-data'; // For fetching client name
+import { MOCK_CLIENTS } from '@/lib/mock-data'; 
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import type { Client } from '@/lib/types';
+
 
 const TRAINER_NAV_ITEMS = [
   { href: '/dashboard', label: 'Clientes', icon: Icons.Clients },
@@ -25,8 +30,6 @@ const TRAINER_NAV_ITEMS = [
 
 const CLIENT_NAV_ITEMS = [
   { href: '/dashboard', label: 'Meus Treinos', icon: Icons.Dashboard },
-  // { href: '/my-workouts', label: 'Meus Treinos', icon: Icons.WorkoutPlan }, // Future page
-  // { href: '/my-profile', label: 'Meu Perfil', icon: Icons.Profile }, // Future page
   { href: '/schedule', label: 'Minha Agenda', icon: Icons.Schedule },
 ];
 
@@ -67,11 +70,18 @@ function UserNav({ userType, userName, userEmail, avatarUrl, avatarHint }: {
   avatarHint?: string;
 }) {
   const router = useRouter();
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('loggedInClientEmail');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await firebaseSignOut(auth); // Sign out from Firebase Auth
+      localStorage.removeItem('isAuthenticated'); // Kept for immediate UI update if needed
+      localStorage.removeItem('userType');
+      localStorage.removeItem('loggedInClientEmail'); // May become obsolete with Firebase Auth
+      router.push('/signup'); // Redirect to signup as login is removed
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      // Fallback or error handling if needed
+      router.push('/signup');
+    }
   };
 
   return (
@@ -94,7 +104,6 @@ function UserNav({ userType, userName, userEmail, avatarUrl, avatarHint }: {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {/* Profile and Settings could lead to different pages based on userType in the future */}
         <DropdownMenuItem onClick={() => router.push('/dashboard')}>
           <Icons.Profile className="mr-2 h-4 w-4" />
           <span>{userType === 'client' ? 'Meu Perfil' : 'Profile'}</span>
@@ -121,45 +130,59 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [userEmail, setUserEmail] = useState('usuario@exemplo.com');
   const [userAvatar, setUserAvatar] = useState('https://placehold.co/100x100.png');
   const [userAvatarHint, setUserAvatarHint] = useState('user avatar');
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
 
   useEffect(() => {
     setIsClientSide(true);
-    const isAuthenticated = localStorage.getItem('isAuthenticated');
-    if (!isAuthenticated) {
-      router.replace('/login');
-      return;
-    }
-    
-    const type = localStorage.getItem('userType') as 'personal' | 'client' | null;
-    setUserType(type);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is signed in
+        localStorage.setItem('isAuthenticated', 'true'); // For compatibility, can be phased out
+        const storedUserType = localStorage.getItem('userType') as 'personal' | 'client' | null;
+        setUserType(storedUserType); // Rely on localStorage for userType initially
+        setUserEmail(user.email || 'usuario@exemplo.com');
 
-    if (type === 'client') {
-      const clientEmail = localStorage.getItem('loggedInClientEmail');
-      if (clientEmail) {
-        const clientData = MOCK_CLIENTS.find(c => c.email.toLowerCase() === clientEmail.toLowerCase());
-        if (clientData) {
-          setUserName(clientData.name);
-          setUserEmail(clientData.email);
-          setUserAvatar(clientData.avatarUrl || 'https://placehold.co/100x100.png');
-          setUserAvatarHint(clientData.dataAiHint || 'user avatar');
+        if (storedUserType === 'client') {
+          // Fetch client details from Firestore using UID
+          const clientDocRef = doc(db, 'clients', user.uid);
+          const clientSnap = await getDoc(clientDocRef);
+          if (clientSnap.exists()) {
+            const clientData = clientSnap.data() as Client;
+            setUserName(clientData.name);
+            setUserAvatar(clientData.avatarUrl || 'https://placehold.co/100x100.png');
+            setUserAvatarHint(clientData.dataAiHint || 'user avatar');
+          } else {
+             // Client data not found in Firestore for this UID, fallback or redirect
+            setUserName('Cliente'); // Fallback name
+            console.warn("Client data not found in Firestore for UID:", user.uid);
+          }
+        } else if (storedUserType === 'personal') {
+          // For personal trainer, if they were to use Firebase Auth
+          setUserName('Personal Trainer'); // Placeholder
+          setUserAvatar('https://placehold.co/100x100.png');
+          setUserAvatarHint('trainer avatar');
+          // Personal trainer might not have an email stored directly in auth if using custom login
         } else {
-          setUserName('Cliente');
-          setUserEmail(clientEmail);
+          // No userType stored, or unknown type
+           router.replace('/signup'); // If type is unknown, redirect
         }
+      } else {
+        // User is signed out
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userType');
+        localStorage.removeItem('loggedInClientEmail');
+        router.replace('/signup'); // Changed from /login to /signup
       }
-    } else if (type === 'personal') {
-      setUserName('Personal Trainer');
-      setUserEmail('trainer@example.com'); // Placeholder
-      setUserAvatar('https://placehold.co/100x100.png');
-      setUserAvatarHint('trainer avatar');
-    }
+      setIsLoadingAuth(false);
+    });
 
+    return () => unsubscribe(); // Cleanup subscription on unmount
   }, [router]);
 
   const currentNavItems = userType === 'client' ? CLIENT_NAV_ITEMS : TRAINER_NAV_ITEMS;
 
-  if (!isClientSide || !userType) {
+  if (isLoadingAuth || !isClientSide) { // Check isLoadingAuth as well
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Icons.Logo className="h-12 w-12 animate-spin text-primary" />
@@ -167,14 +190,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
   
-  if (typeof window !== 'undefined' && !localStorage.getItem('isAuthenticated')) {
-    return (
-       <div className="flex h-screen w-full items-center justify-center">
-        <Icons.Logo className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-2">Redirecionando para o login...</p>
-      </div>
-    );
+  // This check might be redundant if onAuthStateChanged handles redirection properly
+  // but kept for safety during transition
+  if (typeof window !== 'undefined' && !auth.currentUser && !localStorage.getItem('isAuthenticated')) {
+     if (pathname !== '/signup' && pathname !== '/some-public-page') { // Add any other public pages
+        router.replace('/signup');
+        return (
+           <div className="flex h-screen w-full items-center justify-center">
+            <Icons.Logo className="h-12 w-12 animate-spin text-primary" />
+            <p className="ml-2">Redirecionando...</p>
+          </div>
+        );
+     }
   }
+  const pathname = usePathname();
+  if (!auth.currentUser && pathname !== '/signup' ) {
+     // User is not authenticated and not on a public page, show loading or redirect.
+     // The onAuthStateChanged should handle redirection, this is a fallback.
+     // To avoid flash of content, it's better to rely on isLoadingAuth.
+  }
+
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -240,4 +275,3 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
-

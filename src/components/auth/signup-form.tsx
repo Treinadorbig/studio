@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -19,10 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { Client } from '@/lib/types';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { MOCK_CLIENTS } from '@/lib/mock-data'; // Ainda pode ser usado por outras partes do app
+import { auth, db } from '@/lib/firebase'; // Ensure auth is imported
 
 const signUpFormSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -54,34 +53,16 @@ export function SignUpForm() {
   });
 
   async function onSubmit(values: SignUpFormValues) {
-    form.clearErrors(); // Limpa erros anteriores
-    console.log('Signup attempt with:', values);
+    form.clearErrors();
     
-    // Simular uma pequena demora, como se fosse uma chamada de API real
-    // await new Promise(resolve => setTimeout(resolve, 1000));
-
     if (values.userType === 'client') {
       try {
-        // Verificar se o email já existe no Firestore
-        const clientsRef = collection(db, 'clients');
-        const q = query(clientsRef, where('email', '==', values.email.toLowerCase()));
-        const querySnapshot = await getDocs(q);
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
 
-        if (!querySnapshot.empty) {
-          toast({
-            variant: "destructive",
-            title: "Erro ao Criar Conta",
-            description: "Este e-mail já está registrado como cliente.",
-          });
-          form.setError("email", { type: "manual", message: "Este e-mail já está registrado." });
-          return;
-        }
-        
-        // Se o email não existe, criar o novo cliente no Firestore
         const newClientData = {
           name: values.name,
           email: values.email.toLowerCase(),
-          // A senha "changeme" não é armazenada diretamente, mas é a convenção para login neste protótipo
           age: 0,
           gender: 'Other' as 'Male' | 'Female' | 'Other',
           weight: 0,
@@ -92,33 +73,49 @@ export function SignUpForm() {
           dataAiHint: 'new user',
           workoutHistory: 'Sem histórico ainda.',
           progress: 0,
-          createdAt: serverTimestamp(), // Firestore registra a data/hora do servidor
+          createdAt: serverTimestamp(),
         };
 
-        await addDoc(collection(db, 'clients'), newClientData);
+        // Use uid from auth as the document ID in Firestore
+        await setDoc(doc(db, 'clients', user.uid), newClientData);
         
-        // Opcionalmente, ainda podemos adicionar ao MOCK_CLIENTS se outras partes do app precisarem dele
-        // temporariamente, mas a fonte primária agora é o Firestore.
-        // MOCK_CLIENTS.push({ ...newClientData, id: String(Date.now()), createdAt: new Date() });
-
-
-      } catch (error) {
-        console.error("Erro ao criar cliente no Firestore:", error);
         toast({
-          variant: "destructive",
-          title: "Erro no Servidor",
-          description: "Não foi possível criar a conta. Tente novamente mais tarde.",
+          title: "Conta Criada com Sucesso!",
+          description: `Bem-vindo(a) ${values.name}! Você já pode fazer login.`,
         });
+        // Redirect to dashboard after successful signup
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userType', values.userType);
+        localStorage.setItem('loggedInClientEmail', values.email.toLowerCase());
+        router.push('/dashboard');
+
+      } catch (error: any) {
+        console.error("Erro ao criar conta:", error);
+        if (error.code === 'auth/email-already-in-use') {
+          toast({
+            variant: "destructive",
+            title: "Erro ao Criar Conta",
+            description: "Este e-mail já está registrado.",
+          });
+          form.setError("email", { type: "manual", message: "Este e-mail já está registrado." });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erro ao Criar Conta",
+            description: error.message || "Não foi possível criar a conta. Tente novamente.",
+          });
+        }
         return;
       }
+    } else if (values.userType === 'personal') {
+      // Logic for personal trainer signup (if different from client)
+      // For now, this type of user will use the default "changeme" password and not real auth
+       toast({
+        title: "Conta de Personal (Simulada) Criada!",
+        description: `Bem-vindo(a) ${values.name}! Você pode fazer login com a senha padrão.`,
+      });
+      router.push('/dashboard'); // Changed from /login to /dashboard
     }
-    // Para 'personal' type, a lógica de signup não muda, pois o login dele já é genérico.
-
-    toast({
-      title: "Conta Criada com Sucesso!",
-      description: `Bem-vindo(a) ${values.name}! Você já pode fazer login.`,
-    });
-    router.push('/login');
   }
 
   return (
