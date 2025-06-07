@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { MOCK_CLIENTS, MOCK_EXERCISES, MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS } from '@/lib/mock-data';
+import { MOCK_EXERCISES, MOCK_WORKOUT_PLANS as FALLBACK_MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS as FALLBACK_MOCK_DIET_PLANS } from '@/lib/mock-data'; // Renamed mock imports for clarity
 import type { Client, AISuggestion, WorkoutPlan, DietPlan } from '@/lib/types';
 import { suggestExercises, SuggestExercisesInput } from '@/ai/flows/suggest-exercises';
 
@@ -24,6 +24,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { WorkoutPlanForm } from '@/components/clients/workout-plan-form';
 import { DietPlanForm } from '@/components/clients/diet-plan-form';
 import { EditClientForm } from '@/components/clients/edit-client-form';
+
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs as getFirestoreDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 
 function ClientProfileDisplay({ client, onOpenEditDialog }: { client: Client; onOpenEditDialog: () => void; }) {
@@ -394,93 +397,149 @@ export default function ClientDetailPage() {
   const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]);
   const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const foundClient = MOCK_CLIENTS.find(c => c.id === clientId);
-    if (foundClient) {
-      setClient(foundClient);
-      const workoutPlans = MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId);
-      setClientWorkoutPlans(workoutPlans);
-      const dietPlans = MOCK_DIET_PLANS.filter(p => p.clientId === clientId);
-      setClientDietPlans(dietPlans);
+    if (!clientId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
 
-      // Handle tab selection from URL hash
-      if (typeof window !== 'undefined') {
-        const hash = window.location.hash.substring(1);
-        if (hash === 'workout' || hash === 'diet' || hash === 'profile') {
-          setActiveTab(hash);
+    const fetchClientAllData = async () => {
+      try {
+        // Fetch client details
+        const clientDocRef = doc(db, 'clients', clientId);
+        const clientSnap = await getDoc(clientDocRef);
+
+        if (clientSnap.exists()) {
+          let clientData = { id: clientSnap.id, ...clientSnap.data() } as Client;
+          if (clientData.createdAt && clientData.createdAt instanceof Timestamp) {
+            clientData.createdAt = clientData.createdAt.toDate().toISOString();
+          }
+          setClient(clientData);
+
+          // Fetch workout plans for this client
+          const workoutPlansQuery = query(collection(db, 'workoutPlans'), where('clientId', '==', clientId));
+          const workoutPlansSnapshot = await getFirestoreDocs(workoutPlansQuery);
+          const workoutPlansList = workoutPlansSnapshot.docs.map(docSnap => {
+            const planData = docSnap.data();
+            const createdAt = planData.createdAt instanceof Timestamp ? planData.createdAt.toDate().toISOString() : planData.createdAt;
+            return { id: docSnap.id, ...planData, createdAt } as WorkoutPlan;
+          });
+          setClientWorkoutPlans(workoutPlansList);
+
+          // Fetch diet plans for this client
+          const dietPlansQuery = query(collection(db, 'dietPlans'), where('clientId', '==', clientId));
+          const dietPlansSnapshot = await getFirestoreDocs(dietPlansQuery);
+          const dietPlansList = dietPlansSnapshot.docs.map(docSnap => {
+            const planData = docSnap.data();
+            const createdAt = planData.createdAt instanceof Timestamp ? planData.createdAt.toDate().toISOString() : planData.createdAt;
+            return { id: docSnap.id, ...planData, createdAt } as DietPlan;
+          });
+          setClientDietPlans(dietPlansList);
+
+        } else {
+          toast({ variant: "destructive", title: "Erro", description: "Cliente não encontrado." });
+          router.push('/dashboard');
         }
+      } catch (error) {
+        console.error("Error fetching client data from Firestore:", error);
+        toast({ variant: "destructive", title: "Erro ao Carregar Dados", description: "Não foi possível buscar os dados do cliente do Firestore." });
+        // Consider not redirecting immediately to allow user to see the error, or redirect after a delay
+      } finally {
+        setLoading(false);
       }
+    };
 
-    } else {
-      // Optionally, show a toast message or redirect if client not found
-      // For now, just pushing to dashboard which might not be ideal if accessed via direct link.
-      // Consider a dedicated 404 or error page in a real app.
-      router.push('/dashboard'); 
+    fetchClientAllData();
+
+    // Handle tab selection from URL hash
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.substring(1);
+      if (hash === 'workout' || hash === 'diet' || hash === 'profile') {
+        setActiveTab(hash);
+      }
     }
-  }, [clientId, router]);
+
+  }, [clientId, router, toast]);
 
 
-  const handleUpdateClientDetails = (updatedData: Partial<Client>) => {
-    if (!client) return;
+  const handleUpdateClientDetails = async (updatedData: Partial<Client>) => {
+    if (!client || !client.id) return;
   
-    const clientIndex = MOCK_CLIENTS.findIndex(c => c.id === client.id);
-    if (clientIndex > -1) {
-      const fullyUpdatedClient = { ...MOCK_CLIENTS[clientIndex], ...updatedData } as Client;
-      MOCK_CLIENTS[clientIndex] = fullyUpdatedClient;
-      setClient(fullyUpdatedClient); 
+    const clientDocRef = doc(db, 'clients', client.id);
+    try {
+      const dataToUpdate = { ...updatedData };
+      delete dataToUpdate.id; // Firestore document ID should not be in the data
+      delete dataToUpdate.createdAt; // Typically, createdAt is not updated
+
+      await updateDoc(clientDocRef, dataToUpdate);
+      
+      setClient(prevClient => ({ ...prevClient!, ...dataToUpdate } as Client));
+      setIsEditClientDialogOpen(false);
+      toast({ title: "Perfil Atualizado", description: `Os detalhes de ${updatedData.name || client.name} foram salvos.` });
+    } catch (error) {
+      console.error("Error updating client in Firestore:", error);
+      toast({ variant: "destructive", title: "Erro ao Atualizar", description: "Não foi possível salvar as alterações no perfil." });
     }
-    setIsEditClientDialogOpen(false);
-    toast({ title: "Perfil Atualizado", description: `Os detalhes de ${updatedData.name || client.name} foram salvos.` });
   };
 
   const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
-    const existingPlanIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
+    // TODO: Implement Firestore save for workout plan
+    console.log("Saving workout plan (mock):", planData);
+    const existingPlanIndex = FALLBACK_MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
     if (existingPlanIndex > -1) {
-      MOCK_WORKOUT_PLANS[existingPlanIndex] = planData;
+      FALLBACK_MOCK_WORKOUT_PLANS[existingPlanIndex] = planData;
     } else {
       const newPlanWithId = { ...planData, id: planData.id || `wp_${Date.now()}_${clientId}`};
-      MOCK_WORKOUT_PLANS.push(newPlanWithId);
+      FALLBACK_MOCK_WORKOUT_PLANS.push(newPlanWithId);
     }
-    setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
+    setClientWorkoutPlans(FALLBACK_MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
   };
 
   const handleDeleteWorkoutPlan = (planId: string) => {
+    // TODO: Implement Firestore delete for workout plan
     if (window.confirm("Tem certeza que deseja excluir este plano de treino?")) {
-      const planIndex = MOCK_WORKOUT_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
+      console.log("Deleting workout plan (mock):", planId);
+      const planIndex = FALLBACK_MOCK_WORKOUT_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
       if (planIndex > -1) {
-        MOCK_WORKOUT_PLANS.splice(planIndex, 1);
+        FALLBACK_MOCK_WORKOUT_PLANS.splice(planIndex, 1);
       }
-      setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
-      toast({ title: "Plano de Treino Excluído", description: "O plano de treino foi removido.", variant: "destructive" });
+      setClientWorkoutPlans(FALLBACK_MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientId));
+      toast({ title: "Plano de Treino Excluído (Mock)", description: "O plano de treino foi removido.", variant: "destructive" });
     }
   };
 
   const handleSaveDietPlan = (planData: DietPlan) => {
-    const existingPlanIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
+    // TODO: Implement Firestore save for diet plan
+    console.log("Saving diet plan (mock):", planData);
+    const existingPlanIndex = FALLBACK_MOCK_DIET_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
     if (existingPlanIndex > -1) {
-      MOCK_DIET_PLANS[existingPlanIndex] = planData;
+      FALLBACK_MOCK_DIET_PLANS[existingPlanIndex] = planData;
     } else {
       const newPlanWithId = { ...planData, id: planData.id || `dp_${Date.now()}_${clientId}`};
-      MOCK_DIET_PLANS.push(newPlanWithId);
+      FALLBACK_MOCK_DIET_PLANS.push(newPlanWithId);
     }
-    setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
+    setClientDietPlans(FALLBACK_MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
   };
 
   const handleDeleteDietPlan = (planId: string) => {
+     // TODO: Implement Firestore delete for diet plan
     if (window.confirm("Tem certeza que deseja excluir este plano alimentar?")) {
-      const planIndex = MOCK_DIET_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
+      console.log("Deleting diet plan (mock):", planId);
+      const planIndex = FALLBACK_MOCK_DIET_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
       if (planIndex > -1) {
-        MOCK_DIET_PLANS.splice(planIndex, 1);
+        FALLBACK_MOCK_DIET_PLANS.splice(planIndex, 1);
       }
-      setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
-      toast({ title: "Plano Alimentar Excluído", description: "O plano alimentar foi removido.", variant: "destructive" });
+      setClientDietPlans(FALLBACK_MOCK_DIET_PLANS.filter(p => p.clientId === clientId));
+      toast({ title: "Plano Alimentar Excluído (Mock)", description: "O plano alimentar foi removido.", variant: "destructive" });
     }
   };
 
 
-  if (!client) {
+  if (loading || !client) { // Combined loading and client check
     return (
       <div className="flex h-full items-center justify-center">
         <Icons.Activity className="h-12 w-12 animate-spin text-primary" />
@@ -521,8 +580,8 @@ export default function ClientDetailPage() {
           <WorkoutPlansSection 
             client={client} 
             plans={clientWorkoutPlans} 
-            onSavePlan={handleSaveWorkoutPlan}
-            onDeletePlan={handleDeleteWorkoutPlan}
+            onSavePlan={handleSaveWorkoutPlan} // Still mock
+            onDeletePlan={handleDeleteWorkoutPlan} // Still mock
           />
           <AiSuggestionsSection client={client} />
         </TabsContent>
@@ -530,8 +589,8 @@ export default function ClientDetailPage() {
            <DietPlansSection
             client={client}
             plans={clientDietPlans}
-            onSavePlan={handleSaveDietPlan}
-            onDeletePlan={handleDeleteDietPlan}
+            onSavePlan={handleSaveDietPlan} // Still mock
+            onDeletePlan={handleDeleteDietPlan} // Still mock
            />
         </TabsContent>
       </Tabs>
@@ -545,7 +604,7 @@ export default function ClientDetailPage() {
           {client && (
             <EditClientForm
               client={client}
-              onSubmit={handleUpdateClientDetails}
+              onSubmit={handleUpdateClientDetails} // Now updates Firestore
               onCancel={() => setIsEditClientDialogOpen(false)}
             />
           )}
@@ -554,5 +613,6 @@ export default function ClientDetailPage() {
     </div>
   );
 }
+    
 
     
