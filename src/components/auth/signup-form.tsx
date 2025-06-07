@@ -19,8 +19,10 @@ import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { MOCK_CLIENTS } from '@/lib/mock-data';
 import type { Client } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { MOCK_CLIENTS } from '@/lib/mock-data'; // Ainda pode ser usado por outras partes do app
 
 const signUpFormSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -32,7 +34,7 @@ const signUpFormSchema = z.object({
   }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem.",
-  path: ["confirmPassword"], // Path to show error on confirmPassword field
+  path: ["confirmPassword"],
 });
 
 type SignUpFormValues = z.infer<typeof signUpFormSchema>;
@@ -47,47 +49,70 @@ export function SignUpForm() {
       email: '',
       password: '',
       confirmPassword: '',
-      userType: 'client', // Default to client
+      userType: 'client',
     },
   });
 
   async function onSubmit(values: SignUpFormValues) {
+    form.clearErrors(); // Limpa erros anteriores
     console.log('Signup attempt with:', values);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    
+    // Simular uma pequena demora, como se fosse uma chamada de API real
+    // await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (values.userType === 'client') {
-      const existingClient = MOCK_CLIENTS.find(client => client.email.toLowerCase() === values.email.toLowerCase());
-      if (existingClient) {
+      try {
+        // Verificar se o email já existe no Firestore
+        const clientsRef = collection(db, 'clients');
+        const q = query(clientsRef, where('email', '==', values.email.toLowerCase()));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          toast({
+            variant: "destructive",
+            title: "Erro ao Criar Conta",
+            description: "Este e-mail já está registrado como cliente.",
+          });
+          form.setError("email", { type: "manual", message: "Este e-mail já está registrado." });
+          return;
+        }
+        
+        // Se o email não existe, criar o novo cliente no Firestore
+        const newClientData = {
+          name: values.name,
+          email: values.email.toLowerCase(),
+          // A senha "changeme" não é armazenada diretamente, mas é a convenção para login neste protótipo
+          age: 0,
+          gender: 'Other' as 'Male' | 'Female' | 'Other',
+          weight: 0,
+          height: 0,
+          fitnessLevel: 'Beginner' as 'Beginner' | 'Intermediate' | 'Advanced',
+          goals: 'Não definido ainda.',
+          avatarUrl: 'https://placehold.co/100x100.png',
+          dataAiHint: 'new user',
+          workoutHistory: 'Sem histórico ainda.',
+          progress: 0,
+          createdAt: serverTimestamp(), // Firestore registra a data/hora do servidor
+        };
+
+        await addDoc(collection(db, 'clients'), newClientData);
+        
+        // Opcionalmente, ainda podemos adicionar ao MOCK_CLIENTS se outras partes do app precisarem dele
+        // temporariamente, mas a fonte primária agora é o Firestore.
+        // MOCK_CLIENTS.push({ ...newClientData, id: String(Date.now()), createdAt: new Date() });
+
+
+      } catch (error) {
+        console.error("Erro ao criar cliente no Firestore:", error);
         toast({
           variant: "destructive",
-          title: "Erro ao Criar Conta",
-          description: "Este e-mail já está registrado como cliente.",
+          title: "Erro no Servidor",
+          description: "Não foi possível criar a conta. Tente novamente mais tarde.",
         });
         return;
       }
-      
-      const newClient: Client = {
-        id: String(Date.now()), // Simple unique ID
-        name: values.name,
-        email: values.email,
-        // password: "changeme", // Not storing password directly in MOCK_CLIENTS for this prototype
-        age: 0, // Default values, user can edit later
-        gender: 'Other',
-        weight: 0,
-        height: 0,
-        fitnessLevel: 'Beginner',
-        goals: 'Não definido ainda.',
-        avatarUrl: 'https://placehold.co/100x100.png',
-        dataAiHint: 'new user',
-        workoutHistory: 'Sem histórico ainda.',
-        progress: 0,
-      };
-      MOCK_CLIENTS.push(newClient);
-      console.log('New client added to MOCK_CLIENTS:', newClient);
-      console.log('MOCK_CLIENTS current state:', MOCK_CLIENTS);
     }
-    // For 'personal' type, we don't need to add to any list for this prototype,
-    // as the login logic already allows any email with 'changeme' password.
+    // Para 'personal' type, a lógica de signup não muda, pois o login dele já é genérico.
 
     toast({
       title: "Conta Criada com Sucesso!",

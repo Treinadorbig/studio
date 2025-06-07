@@ -19,7 +19,11 @@ import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { MOCK_CLIENTS } from '@/lib/mock-data'; // Import MOCK_CLIENTS to check against
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import type { Client } from '@/lib/types';
+// MOCK_CLIENTS pode ser removido se não for mais usado para login de cliente
+// import { MOCK_CLIENTS } from '@/lib/mock-data'; 
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um endereço de e-mail válido.' }),
@@ -39,32 +43,49 @@ export function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
-      userType: 'client', // Default to client
+      userType: 'client', 
     },
   });
 
   async function onSubmit(values: LoginFormValues) {
     console.log('Login attempt with:', values);
+    form.clearErrors();
     
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    // await new Promise(resolve => setTimeout(resolve, 1000)); 
 
     let loginSuccessful = false;
     let userName = 'Usuário';
 
     if (values.userType === 'personal') {
-      // For personal trainer, any email with "changeme" password works for this prototype
       if (values.password === 'changeme') {
         loginSuccessful = true;
         userName = 'Personal Trainer';
       }
     } else if (values.userType === 'client') {
-      const client = MOCK_CLIENTS.find(c => c.email.toLowerCase() === values.email.toLowerCase());
-      if (client) {
-        // For this prototype, all clients (original or newly created) log in with "changeme"
-        if (values.password === 'changeme') {
-          loginSuccessful = true;
-          userName = client.name;
-          localStorage.setItem('loggedInClientEmail', client.email);
+      if (values.password === 'changeme') { // Mantendo a senha padrão "changeme"
+        try {
+          const clientsRef = collection(db, 'clients');
+          const q = query(clientsRef, where('email', '==', values.email.toLowerCase()));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            // Cliente encontrado no Firestore
+            const clientDoc = querySnapshot.docs[0]; // Pega o primeiro resultado (deve ser único pelo email)
+            const clientData = clientDoc.data() as Client;
+            loginSuccessful = true;
+            userName = clientData.name;
+            localStorage.setItem('loggedInClientEmail', clientData.email);
+            // Poderíamos também armazenar o clientData.id se necessário
+            // localStorage.setItem('loggedInClientId', clientDoc.id);
+          }
+        } catch (error) {
+          console.error("Erro ao verificar cliente no Firestore:", error);
+          toast({
+            variant: "destructive",
+            title: "Erro no Servidor",
+            description: "Não foi possível verificar o login. Tente novamente mais tarde.",
+          });
+          return; // Sai da função em caso de erro no Firestore
         }
       }
     }
@@ -75,6 +96,7 @@ export function LoginForm() {
       
       if (values.userType === 'personal') {
         localStorage.removeItem('loggedInClientEmail'); 
+        // localStorage.removeItem('loggedInClientId');
       }
 
       toast({
@@ -88,6 +110,11 @@ export function LoginForm() {
         title: "Falha no Login",
         description: "Email ou senha incorretos, ou tipo de usuário inválido.",
       });
+       if (values.userType === 'client' && values.password === 'changeme') {
+        form.setError("email", { type: "manual", message: "Cliente não encontrado com este e-mail." });
+      } else {
+        form.setError("password", { type: "manual", message: "Credenciais inválidas." });
+      }
     }
   }
 
