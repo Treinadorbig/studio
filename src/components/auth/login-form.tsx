@@ -28,7 +28,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 // Credenciais do Personal Trainer
-const PERSONAL_TRAINER_EMAIL = 'treinador@big';
+const PERSONAL_TRAINER_EMAIL = 'treinador@big.com'; // Email atualizado aqui
 const PERSONAL_TRAINER_PASSWORD = '10489810';
 
 export function LoginForm() {
