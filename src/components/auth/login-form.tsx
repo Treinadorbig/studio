@@ -1,6 +1,7 @@
+
 'use client';
 
-import * import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Icons } from '@/components/icons'; // Para ícone de carregamento
+import { Icons } from '@/components/icons';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
@@ -53,7 +54,6 @@ export function LoginForm() {
       values.email === PERSONAL_TRAINER_EMAIL &&
       values.password === PERSONAL_TRAINER_PASSWORD
     ) {
-      // Login de Personal Trainer bem-sucedido
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userType', 'personal');
       localStorage.setItem('userEmail', values.email);
@@ -63,11 +63,7 @@ export function LoginForm() {
       });
       router.push('/dashboard');
     } else {
-      // Verificar se é um cliente (lógica futura - por enquanto, falha para outros)
-      // Aqui você integraria com o Firebase Auth para clientes
-      // Ex: const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      // if (userCredential.user) { /* ... lógica cliente ... */ }
-      
+      // Futuramente, adicionar lógica para clientes aqui (Firebase Auth)
       toast({
         title: 'Erro de Login',
         description: 'Credenciais inválidas. Por favor, tente novamente.',
