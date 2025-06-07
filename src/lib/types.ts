@@ -28,3 +28,15 @@ export interface Exercise {
   interval: string; // Ex: "60s", "1 min"
   observations?: string; // Campo opcional para notas adicionais
 }
+
+export interface WorkoutDay {
+  id: string;
+  name: string; // Ex: "Treino A", "Peito e Tríceps"
+  exercises: Exercise[];
+}
+
+export interface TrainingProgram {
+  id: string;
+  name: string;
+  workoutDays: WorkoutDay[];
+}
