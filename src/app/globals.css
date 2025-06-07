@@ -8,95 +8,95 @@ body {
 
 @layer base {
   :root {
-    --background: 45 40% 95%; /* Cream */
-    --foreground: 0 0% 10%; /* Black/Dark Gray */
+    --background: 0 0% 4%; /* Deep Black */
+    --foreground: 0 0% 98%; /* White/Light Gray */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 10%; /* Black/Dark Gray */
+    --card: 0 0% 10%; /* Dark Gray for cards */
+    --card-foreground: 0 0% 98%; /* White text on cards */
 
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 0 0% 10%; /* Black/Dark Gray */
+    --popover: 0 0% 7%; /* Darker Gray for popovers */
+    --popover-foreground: 0 0% 98%; /* White text on popovers */
 
-    --primary: 0 0% 10%; /* Black/Dark Gray */
-    --primary-foreground: 0 0% 98%; /* White/Light Gray */
+    --primary: 210 90% 55%; /* Vibrant Blue */
+    --primary-foreground: 0 0% 98%; /* White text on primary blue */
 
-    --secondary: 0 0% 90%; /* Light Gray */
-    --secondary-foreground: 0 0% 10%; /* Black/Dark Gray */
+    --secondary: 0 0% 15%; /* Dark Gray for secondary elements */
+    --secondary-foreground: 0 0% 90%; /* Light Gray text on secondary */
 
-    --muted: 0 0% 96%; /* Very Light Gray */
-    --muted-foreground: 0 0% 45%; /* Medium Gray */
+    --muted: 0 0% 12%; /* Dark Gray for muted elements */
+    --muted-foreground: 0 0% 60%; /* Medium Gray text on muted */
 
-    --accent: 45 30% 90%; /* Darker/Muted Cream */
-    --accent-foreground: 0 0% 10%; /* Black/Dark Gray */
+    --accent: 210 90% 55%; /* Vibrant Blue for accents */
+    --accent-foreground: 0 0% 98%; /* White text on accent blue */
     
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 50%; /* Red for destructive actions */
+    --destructive-foreground: 0 0% 98%; /* White text on destructive */
 
-    --border: 0 0% 85%; /* Light Gray Border */
-    --input: 0 0% 85%; /* Light Gray Input Border (background of input will be card/white) */
-    --ring: 0 0% 10%; /* Black/Dark Gray for rings */
+    --border: 0 0% 20%; /* Dark Gray for borders */
+    --input: 0 0% 18%; /* Dark Gray for input backgrounds/borders */
+    --ring: 210 90% 65%; /* Lighter Vibrant Blue for rings/focus */
 
     --radius: 0.5rem;
 
-    /* Sidebar specific light theme variables */
-    --sidebar-background: 0 0% 12%; /* Slightly off-black */
-    --sidebar-foreground: 0 0% 95%;    /* Off-white text */
-    --sidebar-primary: 45 40% 95%; /* Cream for active item background */
-    --sidebar-primary-foreground: 0 0% 10%; /* Black/Dark Gray text for active item */
-    --sidebar-accent: 0 0% 20%; /* Darker Gray for hover background */
-    --sidebar-accent-foreground: 0 0% 95%; /* Off-white text for hover */
-    --sidebar-border: 0 0% 25%; /* Dark Gray */
-    --sidebar-ring: 45 40% 95%; /* Cream */
+    /* Sidebar specific dark theme variables */
+    --sidebar-background: 0 0% 8%; /* Very Dark Gray for sidebar */
+    --sidebar-foreground: 0 0% 95%;    /* Off-white text for sidebar */
+    --sidebar-primary: 210 90% 55%; /* Vibrant Blue for active sidebar item background */
+    --sidebar-primary-foreground: 0 0% 98%; /* White text for active sidebar item */
+    --sidebar-accent: 0 0% 15%; /* Darker Gray for sidebar hover background */
+    --sidebar-accent-foreground: 0 0% 95%; /* Off-white text for sidebar hover */
+    --sidebar-border: 0 0% 15%; /* Dark Gray for sidebar borders */
+    --sidebar-ring: 210 90% 65%; /* Lighter Vibrant Blue for sidebar rings */
 
-    --chart-1: 0 0% 30%;
-    --chart-2: 0 0% 50%;
-    --chart-3: 0 0% 70%;
-    --chart-4: 45 20% 60%;
-    --chart-5: 45 30% 70%;
+    --chart-1: 210 80% 70%; /* Light Blue */
+    --chart-2: 210 70% 60%; /* Medium Blue */
+    --chart-3: 210 60% 50%; /* Dark Blue */
+    --chart-4: 0 0% 50%;    /* Medium Gray */
+    --chart-5: 0 0% 70%;    /* Light Gray */
   }
 
   .dark {
-    --background: 0 0% 10%; /* Black/Dark Gray */
-    --foreground: 45 40% 95%; /* Cream Text */
+    /* Keeping .dark consistent with :root for a default dark theme */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 15%; /* Slightly lighter than background */
-    --card-foreground: 45 40% 95%; /* Cream Text */
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 45 40% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 45 40% 95%; /* Cream */
-    --primary-foreground: 0 0% 10%; /* Black/Dark Gray Text */
+    --primary: 210 90% 55%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 25%; /* Darker Gray */
-    --secondary-foreground: 45 30% 90%; /* Lighter Cream */
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 0 0% 20%;
+    --muted: 0 0% 12%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 0 0% 22%; /* Slightly Lighter Gray for hover */
-    --accent-foreground: 45 40% 95%; /* Cream Text */
+    --accent: 210 90% 55%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 45 40% 95%; /* Cream */
+    --border: 0 0% 20%;
+    --input: 0 0% 18%;
+    --ring: 210 90% 65%;
 
-    /* Sidebar specific dark theme variables */
-    --sidebar-background: 0 0% 8%; /* Even darker black */
-    --sidebar-foreground: 45 30% 90%;    /* Light cream text */
-    --sidebar-primary: 0 0% 20%; /* Dark Gray for active item background */
-    --sidebar-primary-foreground: 45 40% 95%; /* Cream text for active item */
-    --sidebar-accent: 0 0% 15%; /* Slightly lighter dark for hover background */
-    --sidebar-accent-foreground: 45 40% 95%; /* Cream text for hover */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 210 90% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 45 40% 95%; /* Cream */
+    --sidebar-ring: 210 90% 65%;
     
-    --chart-1: 45 40% 80%;
-    --chart-2: 45 30% 70%;
-    --chart-3: 45 20% 60%;
+    --chart-1: 210 80% 70%;
+    --chart-2: 210 70% 60%;
+    --chart-3: 210 60% 50%;
     --chart-4: 0 0% 50%;
     --chart-5: 0 0% 70%;
   }
