@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkoutPlanForm } from '@/components/clients/workout-plan-form';
 import { DietPlanForm } from '@/components/clients/diet-plan-form';
-import { EditClientForm } from '@/components/clients/edit-client-form';
+import { EditClientForm, type EditClientFormValues } from '@/components/clients/edit-client-form'; // Importado EditClientFormValues
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs as getFirestoreDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -447,7 +447,6 @@ export default function ClientDetailPage() {
       } catch (error) {
         console.error("Error fetching client data from Firestore:", error);
         toast({ variant: "destructive", title: "Erro ao Carregar Dados", description: "Não foi possível buscar os dados do cliente do Firestore." });
-        // Consider not redirecting immediately to allow user to see the error, or redirect after a delay
       } finally {
         setLoading(false);
       }
@@ -455,7 +454,6 @@ export default function ClientDetailPage() {
 
     fetchClientAllData();
 
-    // Handle tab selection from URL hash
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.substring(1);
       if (hash === 'workout' || hash === 'diet' || hash === 'profile') {
@@ -466,28 +464,51 @@ export default function ClientDetailPage() {
   }, [clientId, router, toast]);
 
 
-  const handleUpdateClientDetails = async (updatedData: Partial<Client>) => {
-    if (!client || !client.id) return;
+  const handleUpdateClientDetails = async (formData: EditClientFormValues) => {
+    if (!client || !client.id) {
+      console.error("Client data or client ID is missing for update.");
+      toast({ variant: "destructive", title: "Erro Interno", description: "Não foi possível identificar o cliente para atualização." });
+      return;
+    }
   
     const clientDocRef = doc(db, 'clients', client.id);
     try {
-      const dataToUpdate = { ...updatedData };
-      delete dataToUpdate.id; // Firestore document ID should not be in the data
-      delete dataToUpdate.createdAt; // Typically, createdAt is not updated
+      //formData é do tipo EditClientFormValues, que inclui 'id'.
+      //Precisamos remover 'id' antes de enviar para updateDoc.
+      const { id: formId, ...dataToSubmit } = formData; 
 
-      await updateDoc(clientDocRef, dataToUpdate);
+      // Log para depuração
+      console.log("Data being submitted to Firestore for update:", dataToSubmit);
+      console.log("Client ID for update:", client.id);
+
+
+      await updateDoc(clientDocRef, dataToSubmit);
       
-      setClient(prevClient => ({ ...prevClient!, ...dataToUpdate } as Client));
+      // Atualiza o estado local com os dados que foram efetivamente submetidos
+      // Isso garante que a UI reflita as mudanças imediatamente.
+      setClient(prevClient => {
+        if (!prevClient) return null;
+        // prevClient é Client, dataToSubmit são os campos do formulário
+        // Sobrescreve os campos de prevClient com os novos valores de dataToSubmit
+        return { ...prevClient, ...dataToSubmit } as Client; 
+      });
+
       setIsEditClientDialogOpen(false);
-      toast({ title: "Perfil Atualizado", description: `Os detalhes de ${updatedData.name || client.name} foram salvos.` });
+      toast({ title: "Perfil Atualizado", description: `Os detalhes de ${formData.name || client.name} foram salvos.` });
     } catch (error) {
       console.error("Error updating client in Firestore:", error);
-      toast({ variant: "destructive", title: "Erro ao Atualizar", description: "Não foi possível salvar as alterações no perfil." });
+      let firestoreErrorMessage = "Não foi possível salvar as alterações no perfil.";
+      if (error instanceof Error) {
+        firestoreErrorMessage += ` (Detalhes: ${error.message})`;
+        if ((error as any).code) {
+           firestoreErrorMessage += ` Código: ${(error as any).code}`;
+        }
+      }
+      toast({ variant: "destructive", title: "Erro ao Atualizar", description: firestoreErrorMessage });
     }
   };
 
   const handleSaveWorkoutPlan = (planData: WorkoutPlan) => {
-    // TODO: Implement Firestore save for workout plan
     console.log("Saving workout plan (mock):", planData);
     const existingPlanIndex = FALLBACK_MOCK_WORKOUT_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
     if (existingPlanIndex > -1) {
@@ -500,7 +521,6 @@ export default function ClientDetailPage() {
   };
 
   const handleDeleteWorkoutPlan = (planId: string) => {
-    // TODO: Implement Firestore delete for workout plan
     if (window.confirm("Tem certeza que deseja excluir este plano de treino?")) {
       console.log("Deleting workout plan (mock):", planId);
       const planIndex = FALLBACK_MOCK_WORKOUT_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
@@ -513,7 +533,6 @@ export default function ClientDetailPage() {
   };
 
   const handleSaveDietPlan = (planData: DietPlan) => {
-    // TODO: Implement Firestore save for diet plan
     console.log("Saving diet plan (mock):", planData);
     const existingPlanIndex = FALLBACK_MOCK_DIET_PLANS.findIndex(p => p.id === planData.id && p.clientId === clientId);
     if (existingPlanIndex > -1) {
@@ -526,7 +545,6 @@ export default function ClientDetailPage() {
   };
 
   const handleDeleteDietPlan = (planId: string) => {
-     // TODO: Implement Firestore delete for diet plan
     if (window.confirm("Tem certeza que deseja excluir este plano alimentar?")) {
       console.log("Deleting diet plan (mock):", planId);
       const planIndex = FALLBACK_MOCK_DIET_PLANS.findIndex(p => p.id === planId && p.clientId === clientId);
@@ -539,7 +557,7 @@ export default function ClientDetailPage() {
   };
 
 
-  if (loading || !client) { // Combined loading and client check
+  if (loading || !client) { 
     return (
       <div className="flex h-full items-center justify-center">
         <Icons.Activity className="h-12 w-12 animate-spin text-primary" />
@@ -580,8 +598,8 @@ export default function ClientDetailPage() {
           <WorkoutPlansSection 
             client={client} 
             plans={clientWorkoutPlans} 
-            onSavePlan={handleSaveWorkoutPlan} // Still mock
-            onDeletePlan={handleDeleteWorkoutPlan} // Still mock
+            onSavePlan={handleSaveWorkoutPlan} 
+            onDeletePlan={handleDeleteWorkoutPlan} 
           />
           <AiSuggestionsSection client={client} />
         </TabsContent>
@@ -589,8 +607,8 @@ export default function ClientDetailPage() {
            <DietPlansSection
             client={client}
             plans={clientDietPlans}
-            onSavePlan={handleSaveDietPlan} // Still mock
-            onDeletePlan={handleDeleteDietPlan} // Still mock
+            onSavePlan={handleSaveDietPlan} 
+            onDeletePlan={handleDeleteDietPlan} 
            />
         </TabsContent>
       </Tabs>
@@ -604,7 +622,7 @@ export default function ClientDetailPage() {
           {client && (
             <EditClientForm
               client={client}
-              onSubmit={handleUpdateClientDetails} // Now updates Firestore
+              onSubmit={handleUpdateClientDetails} 
               onCancel={() => setIsEditClientDialogOpen(false)}
             />
           )}
@@ -613,6 +631,3 @@ export default function ClientDetailPage() {
     </div>
   );
 }
-    
-
-    

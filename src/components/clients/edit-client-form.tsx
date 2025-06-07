@@ -23,8 +23,10 @@ import { Icons } from '@/components/icons';
 import type { Client } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+// Este schema representa os dados do formulário. O 'id' é incluído aqui
+// porque faz parte dos defaultValues do formulário, mas será removido antes de enviar para o Firestore.
 const editClientFormSchema = z.object({
-  id: z.string(), // Hidden but necessary to identify client
+  id: z.string(), 
   name: z.string().min(2, { message: 'Nome deve ter pelo menos 2 caracteres.' }),
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
   age: z.coerce.number().min(0, { message: 'Idade não pode ser negativa.' }).optional(),
@@ -34,11 +36,10 @@ const editClientFormSchema = z.object({
   fitnessLevel: z.enum(['Beginner', 'Intermediate', 'Advanced'], { required_error: 'Selecione o nível de fitness.' }),
   goals: z.string().optional(),
   workoutHistory: z.string().optional(),
-  // avatarUrl and dataAiHint are not typically edited here
-  // progress is usually calculated
 });
 
-type EditClientFormValues = z.infer<typeof editClientFormSchema>;
+// Exporta o tipo para que a página pai possa usá-lo
+export type EditClientFormValues = z.infer<typeof editClientFormSchema>;
 
 interface EditClientFormProps {
   client: Client;
@@ -53,7 +54,7 @@ export function EditClientForm({ client, onSubmit, onCancel }: EditClientFormPro
       id: client.id,
       name: client.name || '',
       email: client.email || '',
-      age: client.age || undefined,
+      age: client.age || undefined, // Usar undefined para que z.coerce.number().optional() funcione corretamente
       gender: client.gender || 'Other',
       weight: client.weight || undefined,
       height: client.height || undefined,
@@ -85,7 +86,7 @@ export function EditClientForm({ client, onSubmit, onCancel }: EditClientFormPro
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-        <ScrollArea className="max-h-[calc(80vh-120px)] pr-5"> {/* Adjust height as needed, considering dialog header/footer */}
+        <ScrollArea className="max-h-[calc(80vh-120px)] pr-5">
           <div className="space-y-4">
             <FormField
               control={form.control}
@@ -121,7 +122,8 @@ export function EditClientForm({ client, onSubmit, onCancel }: EditClientFormPro
                   <FormItem>
                     <FormLabel>Idade</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 30" {...field} onChange={event => field.onChange(+event.target.value)} />
+                      {/* O valor será string vazia se undefined, Zod coerce cuidará da conversão */}
+                      <Input type="number" placeholder="Ex: 30" {...field} value={field.value === undefined ? '' : field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -164,7 +166,7 @@ export function EditClientForm({ client, onSubmit, onCancel }: EditClientFormPro
                   <FormItem>
                     <FormLabel>Peso (kg)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 70" {...field} onChange={event => field.onChange(+event.target.value)} />
+                      <Input type="number" placeholder="Ex: 70" {...field} value={field.value === undefined ? '' : field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -177,7 +179,7 @@ export function EditClientForm({ client, onSubmit, onCancel }: EditClientFormPro
                   <FormItem>
                     <FormLabel>Altura (cm)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 175" {...field} onChange={event => field.onChange(+event.target.value)} />
+                      <Input type="number" placeholder="Ex: 175" {...field} value={field.value === undefined ? '' : field.value} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -213,7 +215,7 @@ export function EditClientForm({ client, onSubmit, onCancel }: EditClientFormPro
                 <FormItem>
                   <FormLabel>Metas</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Descreva as metas do cliente" {...field} rows={3} />
+                    <Textarea placeholder="Descreva as metas do cliente" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
