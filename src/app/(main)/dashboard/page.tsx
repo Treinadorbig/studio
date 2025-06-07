@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Icons } from '@/components/icons';
-import { MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS } from '@/lib/mock-data'; // Exercises will still come from mock for now
+import { MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS } from '@/lib/mock-data'; 
 import type { Client, WorkoutPlan, DietPlan } from '@/lib/types';
 import {
   Dialog,
@@ -22,7 +22,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 // Trainer's View Components
 function TrainerClientCard({ client }: { client: Client }) {
@@ -38,7 +38,7 @@ function TrainerClientCard({ client }: { client: Client }) {
       }).slice(0, 2).join(' | ')
     : 'Nenhum plano ativo';
 
-  const displayGoals = client.goals.length > 50 ? client.goals.substring(0, 47) + '...' : client.goals;
+  const displayGoals = client.goals && client.goals.length > 50 ? client.goals.substring(0, 47) + '...' : client.goals;
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-150 animate-fade-in flex flex-col w-full">
@@ -52,7 +52,7 @@ function TrainerClientCard({ client }: { client: Client }) {
       <CardContent className="p-3 pt-0 space-y-1.5 flex-grow">
         <div className="mb-1">
           <p className="text-xs font-medium text-muted-foreground">Metas:</p>
-          <p className="text-xs text-foreground h-8 overflow-y-hidden">{displayGoals}</p>
+          <p className="text-xs text-foreground h-8 overflow-y-hidden">{displayGoals || 'N/A'}</p>
         </div>
         <div>
           <p className="text-xs font-medium text-muted-foreground">Planos:</p>
@@ -128,7 +128,7 @@ function TrainerDashboardContent({ clients, onAddClient, loadingClients }: { cli
   );
 }
 
-// Client's View Components (Unchanged for now)
+// Client's View Components
 function ClientWorkoutPlanCard({ plan }: { plan: WorkoutPlan }) {
   return (
     <Card className="bg-card hover:shadow-md transition-shadow">
@@ -214,9 +214,9 @@ function ClientDashboardContent({ client, clientWorkoutPlans, clientDietPlans }:
           <CardTitle className="flex items-center"><Icons.Profile className="mr-2 h-6 w-6 text-primary" /> Meu Perfil (Resumo)</CardTitle>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
-          <div><Badge variant="outline">Idade</Badge> <p className="inline ml-2">{client.age} anos</p></div>
-          <div><Badge variant="outline">Nível</Badge> <p className="inline ml-2">{client.fitnessLevel}</p></div>
-          <div className="md:col-span-2"><Badge variant="outline">Metas</Badge> <p className="inline ml-2 whitespace-pre-line">{client.goals}</p></div>
+          <div><Badge variant="outline">Idade</Badge> <p className="inline ml-2">{client.age || 'N/A'} anos</p></div>
+          <div><Badge variant="outline">Nível</Badge> <p className="inline ml-2">{client.fitnessLevel || 'N/A'}</p></div>
+          <div className="md:col-span-2"><Badge variant="outline">Metas</Badge> <p className="inline ml-2 whitespace-pre-line">{client.goals || 'N/A'}</p></div>
         </CardContent>
       </Card>
       
@@ -271,11 +271,11 @@ function ClientDashboardContent({ client, clientWorkoutPlans, clientDietPlans }:
 export default function DashboardPage() {
   const [userType, setUserType] = useState<'personal' | 'client' | null>(null);
   const [clients, setClients] = useState<Client[]>([]); 
-  const [loadingClients, setLoadingClients] = useState(true);
+  const [loadingClients, setLoadingClients] = useState(true); // For trainer's client list
   const [currentClient, setCurrentClient] = useState<Client | null>(null); 
   const [clientWorkoutPlans, setClientWorkoutPlans] = useState<WorkoutPlan[]>([]); 
   const [clientDietPlans, setClientDietPlans] = useState<DietPlan[]>([]); 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPage, setIsLoadingPage] = useState(true); // General page loading state
   const { toast } = useToast();
 
   const fetchClientsFromFirestore = useCallback(async () => {
@@ -287,7 +287,6 @@ export default function DashboardPage() {
         const clientSnapshot = await getDocs(q);
         const clientsList = clientSnapshot.docs.map(doc => {
           const data = doc.data();
-          // Convert Firestore Timestamp to Date if necessary, or keep as is if your type expects Timestamp
           const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt;
           return { ...data, id: doc.id, createdAt } as Client;
         });
@@ -299,58 +298,69 @@ export default function DashboardPage() {
           title: "Erro ao Carregar Clientes",
           description: "Não foi possível buscar os clientes do banco de dados.",
         });
+        setClients([]); // Clear clients on error
       } finally {
         setLoadingClients(false);
       }
     }
   }, [userType, toast]);
 
+  const fetchCurrentClientData = useCallback(async (email: string) => {
+    setIsLoadingPage(true); // Start loading for client view
+    try {
+      const clientsRef = collection(db, 'clients');
+      const q = query(clientsRef, where('email', '==', email.toLowerCase()));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const clientDoc = querySnapshot.docs[0];
+        const clientData = { ...clientDoc.data(), id: clientDoc.id } as Client;
+        setCurrentClient(clientData);
+        // For now, workout and diet plans still come from mock, filtered by the loaded client's ID
+        setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === clientData.id));
+        setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === clientData.id));
+      } else {
+        setCurrentClient(null); // Client not found
+        toast({
+          variant: "destructive",
+          title: "Cliente Não Encontrado",
+          description: "Não foi possível carregar os dados do cliente.",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching current client data from Firestore:", error);
+      setCurrentClient(null);
+      toast({
+        variant: "destructive",
+        title: "Erro ao Carregar Dados",
+        description: "Ocorreu um problema ao buscar os dados do cliente.",
+      });
+    } finally {
+      setIsLoadingPage(false); // Stop loading for client view
+    }
+  }, [toast]);
 
   useEffect(() => {
     const type = localStorage.getItem('userType') as 'personal' | 'client' | null;
     setUserType(type);
-    setIsLoading(false); // General loading for page structure
 
     if (type === 'personal') {
       fetchClientsFromFirestore();
+      setIsLoadingPage(false); // Personal trainer view main loading done after fetchClients call
     } else if (type === 'client') {
-      // Client-specific data fetching (from mock for now, will also move to Firestore later)
       const clientEmail = localStorage.getItem('loggedInClientEmail');
       if (clientEmail) {
-        // This part will need to fetch client data from Firestore in a future step
-        // For now, it might rely on MOCK_CLIENTS if it's still imported and used for client login.
-        // Or better, show loading / error if client not found from a Firestore query.
-        // To keep this step focused, we'll assume currentClient data handling for client view is separate.
-        // const foundClient = MOCK_CLIENTS.find(c => c.email.toLowerCase() === clientEmail.toLowerCase());
-        // setCurrentClient(foundClient || null);
-        // if (foundClient) {
-        //   setClientWorkoutPlans(MOCK_WORKOUT_PLANS.filter(p => p.clientId === foundClient.id));
-        //   setClientDietPlans(MOCK_DIET_PLANS.filter(p => p.clientId === foundClient.id));
-        // }
-        // For now, let's leave client view data loading as is.
-        setLoadingClients(false); // No clients to load for client view here
+        fetchCurrentClientData(clientEmail);
       } else {
-         setLoadingClients(false);
+        setCurrentClient(null); // No email, so no client to load
+        setIsLoadingPage(false);
       }
+      setLoadingClients(false); // Not applicable for client view here
     } else {
-       setLoadingClients(false);
+      setIsLoadingPage(false); // No user type, stop loading
+      setLoadingClients(false);
     }
-  }, [userType, fetchClientsFromFirestore]);
-
-  // Effect for client-specific data (placeholder, as this part will also need Firestore integration)
-   useEffect(() => {
-    if (userType === 'client') {
-      const clientEmail = localStorage.getItem('loggedInClientEmail');
-      // This is where you would fetch specific client details, their plans etc. from Firestore.
-      // For now, it's simplified.
-      // const foundClient = MOCK_CLIENTS.find(c => c.email.toLowerCase() === clientEmail.toLowerCase());
-      // setCurrentClient(foundClient || null);
-      // setClientWorkoutPlans(foundClient ? MOCK_WORKOUT_PLANS.filter(p => p.clientId === foundClient.id) : []);
-      // setClientDietPlans(foundClient ? MOCK_DIET_PLANS.filter(p => p.clientId === foundClient.id) : []);
-       setIsLoading(false); // Stop general loading
-       setLoadingClients(false); // Stop client-specific loading
-    }
-  }, [userType]);
+  }, [userType, fetchClientsFromFirestore, fetchCurrentClientData]);
 
 
   const handleAddClient = async (newClientData: Omit<Client, 'id' | 'avatarUrl' | 'dataAiHint' | 'age' | 'gender' | 'weight' | 'height' | 'fitnessLevel' | 'goals' | 'workoutHistory' | 'progress' | 'createdAt'>) => {
@@ -366,7 +376,7 @@ export default function DashboardPage() {
       goals: 'Não definido ainda.',
       workoutHistory: 'Sem histórico ainda.',
       progress: 0,
-      createdAt: serverTimestamp(), // Firestore server-side timestamp
+      createdAt: serverTimestamp(), 
     };
 
     try {
@@ -376,7 +386,7 @@ export default function DashboardPage() {
         title: "Cliente Adicionado!",
         description: `${newClientData.name} foi adicionado com sucesso ao Firestore.`,
       });
-      fetchClientsFromFirestore(); // Re-fetch clients to update the list
+      fetchClientsFromFirestore(); 
     } catch (error) {
       console.error("Error adding client to Firestore: ", error);
       toast({
@@ -387,7 +397,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoadingPage) {
     return (
       <div className="flex h-full items-center justify-center">
         <Icons.Activity className="h-12 w-12 animate-spin text-primary" />
@@ -397,16 +407,7 @@ export default function DashboardPage() {
   }
 
   if (userType === 'client') {
-    // Client view still relies on mock data for workout/diet plans for now.
-    // The currentClient data itself would ideally also come from Firestore.
-    // This part of the logic (fetching currentClient, MOCK_WORKOUT_PLANS, MOCK_DIET_PLANS)
-    // is simplified for this step and will be addressed in future Firestore integrations for client view.
-    const loggedInEmail = typeof window !== 'undefined' ? localStorage.getItem('loggedInClientEmail') : null;
-    // const mockClientForView = loggedInEmail ? MOCK_CLIENTS.find(c => c.email.toLowerCase() === loggedInEmail.toLowerCase()) : null;
-    
-    // For now, let's keep the client view showing a placeholder or minimal data
-    // as it needs its own Firestore fetching logic.
-     return <ClientDashboardContent client={currentClient} clientWorkoutPlans={clientWorkoutPlans} clientDietPlans={clientDietPlans} />;
+    return <ClientDashboardContent client={currentClient} clientWorkoutPlans={clientWorkoutPlans} clientDietPlans={clientDietPlans} />;
   }
 
   if (userType === 'personal') {
@@ -420,3 +421,5 @@ export default function DashboardPage() {
       </div>
   );
 }
+
+    
