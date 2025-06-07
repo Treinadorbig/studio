@@ -57,9 +57,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               Dashboard
             </Link>
             {userType === 'personal' && (
-              <Link href="/training-library" className="text-muted-foreground transition-colors hover:text-foreground">
-                Biblioteca de Treinos
-              </Link>
+              <>
+                <Link href="/training-library" className="text-muted-foreground transition-colors hover:text-foreground">
+                  Biblioteca de Treinos
+                </Link>
+                <Link href="/diet-library" className="text-muted-foreground transition-colors hover:text-foreground">
+                  Biblioteca de Dietas
+                </Link>
+              </>
             )}
             {/* Adicionar mais links de navegação aqui conforme necessário */}
           </nav>
