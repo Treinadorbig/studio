@@ -8,13 +8,13 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/signup'); // Changed from /login to /signup
+    router.replace('/dashboard');
   }, [router]);
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
       <Icons.Logo className="h-16 w-16 text-primary animate-pulse" />
-      <p className="mt-4 text-lg text-foreground">Carregando BigTreino...</p>
+      <p className="mt-4 text-lg text-foreground">Carregando App...</p>
     </div>
   );
 }

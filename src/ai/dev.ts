@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/suggest-exercises.ts';
+// Nenhum fluxo importado por padrão no reset.
+// import '@/ai/flows/example-flow'; // Descomente quando tiver fluxos
