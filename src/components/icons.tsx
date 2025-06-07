@@ -1,8 +1,9 @@
+
 import {
   Dumbbell, // Usando como Logo
   Activity, // Para loading e dashboard
   Users, // Para clientes
-  ClipboardList, // Para planos de treino
+  ClipboardList, // Para planos de treino / Biblioteca de Treinos
   CalendarDays, // Para agendamento
   Apple, // Para planos de dieta
   LogOut, // Para logout
@@ -13,6 +14,7 @@ import {
   AlertTriangle, // Para avisos
   CheckCircle2, // Para sucesso
   Menu, // Para menu mobile
+  BookOpen, // Novo ícone para biblioteca
   type LucideProps,
 } from 'lucide-react';
 
@@ -20,7 +22,8 @@ export const Icons = {
   Logo: (props: LucideProps) => <Dumbbell {...props} />,
   Activity: (props: LucideProps) => <Activity {...props} />,
   Users: (props: LucideProps) => <Users {...props} />,
-  WorkoutPlan: (props: LucideProps) => <ClipboardList {...props} />,
+  WorkoutPlan: (props: LucideProps) => <ClipboardList {...props} />, // Pode ser usado para planos de cliente
+  WorkoutLibrary: (props: LucideProps) => <BookOpen {...props} />, // Ícone para a biblioteca de treinos
   Schedule: (props: LucideProps) => <CalendarDays {...props} />,
   DietPlan: (props: LucideProps) => <Apple {...props} />,
   Logout: (props: LucideProps) => <LogOut {...props} />,
