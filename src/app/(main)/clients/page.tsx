@@ -120,7 +120,7 @@ export default function ClientsListPage() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleClientAction('Montar Treino', client.name)}>
                       <Icons.WorkoutLibrary className="mr-2 h-4 w-4" />
-                      Adicione a funcionalidade de montar, ou copiar o treino ou plano de treino da biblioteca para este cliente
+                      Montar Treino
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleClientAction('Editar Informações do Cliente', client.name)}>
