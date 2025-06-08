@@ -15,13 +15,14 @@ const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
 const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
 
 interface ClientTrainingAssignments {
-  [clientId: string]: string; // clientId -> programId
+  [clientId: string]: string; // clientId (decoded email) -> programId
 }
 
 export default function AssignTrainingPage() {
   const params = useParams();
   const router = useRouter();
-  const clientId = params.clientId as string;
+  const encodedClientIdFromParams = params.clientId as string; // This might be URL-encoded
+  const clientId = decodeURIComponent(encodedClientIdFromParams); // Always use the decoded version
   const { toast } = useToast();
 
   const [availablePrograms, setAvailablePrograms] = useState<TrainingProgram[]>([]);
@@ -42,11 +43,11 @@ export default function AssignTrainingPage() {
         setAvailablePrograms(JSON.parse(storedPrograms));
       }
 
-      // Load client assignments
+      // Load client assignments using the decoded clientId
       const storedAssignments = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
       if (storedAssignments) {
         const assignments: ClientTrainingAssignments = JSON.parse(storedAssignments);
-        const currentClientAssignment = assignments[clientId];
+        const currentClientAssignment = assignments[clientId]; // Use decoded clientId for lookup
         if (currentClientAssignment) {
           setAssignedProgramId(currentClientAssignment);
         }
@@ -68,13 +69,13 @@ export default function AssignTrainingPage() {
     if (typeof window !== 'undefined') {
       const storedAssignments = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
       let assignments: ClientTrainingAssignments = storedAssignments ? JSON.parse(storedAssignments) : {};
-      assignments[clientId] = programIdToAssign;
+      assignments[clientId] = programIdToAssign; // Use decoded clientId as key
       localStorage.setItem(CLIENT_TRAINING_ASSIGNMENTS_KEY, JSON.stringify(assignments));
       setAssignedProgramId(programIdToAssign);
       const program = availablePrograms.find(p => p.id === programIdToAssign);
       toast({
         title: 'Programa Atribuído!',
-        description: `O programa "${program?.name || 'Selecionado'}" foi atribuído a ${decodeURIComponent(clientId)}.`,
+        description: `O programa "${program?.name || 'Selecionado'}" foi atribuído a ${clientId}.`,
       });
     }
   };
@@ -84,13 +85,13 @@ export default function AssignTrainingPage() {
       const storedAssignments = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
       if (storedAssignments) {
         let assignments: ClientTrainingAssignments = JSON.parse(storedAssignments);
-        delete assignments[clientId];
+        delete assignments[clientId]; // Use decoded clientId to delete
         localStorage.setItem(CLIENT_TRAINING_ASSIGNMENTS_KEY, JSON.stringify(assignments));
         setAssignedProgramId(null);
         setAssignedProgramDetails(null);
         toast({
           title: 'Programa Removido!',
-          description: `O programa anteriormente atribuído a ${decodeURIComponent(clientId)} foi removido.`,
+          description: `O programa anteriormente atribuído a ${clientId} foi removido.`,
           variant: 'destructive',
         });
       }
@@ -112,7 +113,7 @@ export default function AssignTrainingPage() {
               <Icons.WorkoutLibrary className="mr-3 h-8 w-8 text-primary" />
               Montar Treino para Cliente
             </CardTitle>
-            <CardDescription>Cliente: {clientId ? decodeURIComponent(clientId) : 'Carregando...'}</CardDescription>
+            <CardDescription>Cliente: {clientId ? clientId : 'Carregando...'}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Icons.Activity className="h-12 w-12 text-primary animate-spin mb-4" />
@@ -138,7 +139,7 @@ export default function AssignTrainingPage() {
             <Icons.WorkoutLibrary className="mr-3 h-8 w-8 text-primary" />
             Atribuir Programa de Treino
           </CardTitle>
-          <CardDescription>Cliente: {decodeURIComponent(clientId)}</CardDescription>
+          <CardDescription>Cliente: {clientId}</CardDescription>
         </CardHeader>
         <CardContent>
           {assignedProgramDetails ? (
@@ -153,7 +154,7 @@ export default function AssignTrainingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Este programa está ativo para {decodeURIComponent(clientId)}.
+                    Este programa está ativo para {clientId}.
                   </p>
                 </CardContent>
                 <CardFooter>
@@ -183,7 +184,7 @@ export default function AssignTrainingPage() {
                       <CardFooter>
                         <Button onClick={() => handleAssignProgram(program.id)} className="w-full">
                           <Icons.Add className="mr-2 h-4 w-4" />
-                          Atribuir a {decodeURIComponent(clientId)}
+                          Atribuir a {clientId}
                         </Button>
                       </CardFooter>
                     </Card>
