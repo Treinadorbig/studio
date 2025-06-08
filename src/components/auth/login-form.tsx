@@ -28,8 +28,10 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 // Credenciais do Personal Trainer
-const PERSONAL_TRAINER_EMAIL = 'treinador@big.com'; // Email atualizado aqui
+const PERSONAL_TRAINER_EMAIL = 'treinador@big.com';
 const PERSONAL_TRAINER_PASSWORD = '10489810';
+
+const CLIENT_STORAGE_KEY = 'clientAuthData';
 
 export function LoginForm() {
   const router = useRouter();
@@ -46,10 +48,9 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulação de delay
 
-    // Simulação de delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
+    // 1. Tentar login como Personal Trainer
     if (
       values.email === PERSONAL_TRAINER_EMAIL &&
       values.password === PERSONAL_TRAINER_PASSWORD
@@ -62,14 +63,34 @@ export function LoginForm() {
         description: 'Bem-vindo, Personal Trainer!',
       });
       router.push('/dashboard');
+      setIsLoading(false);
+      return;
+    }
+
+    // 2. Tentar login como Cliente
+    const storedClients = localStorage.getItem(CLIENT_STORAGE_KEY);
+    const clients = storedClients ? JSON.parse(storedClients) : [];
+    const clientUser = clients.find(
+      (client: any) => client.email === values.email && client.password === values.password
+    );
+
+    if (clientUser) {
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userType', 'client');
+      localStorage.setItem('userEmail', clientUser.email); // Salva email do cliente
+      // localStorage.setItem('userName', clientUser.name); // Poderia salvar o nome também se necessário
+      toast({
+        title: 'Login bem-sucedido!',
+        description: `Bem-vindo(a), ${clientUser.name}!`,
+      });
+      router.push('/dashboard');
     } else {
-      // Futuramente, adicionar lógica para clientes aqui (Firebase Auth)
       toast({
         title: 'Erro de Login',
         description: 'Credenciais inválidas. Por favor, tente novamente.',
         variant: 'destructive',
       });
-      form.setError('email', { message: ' ' }); // Limpa erro específico mas indica falha
+      form.setError('email', { message: ' ' }); 
       form.setError('password', { message: 'Credenciais inválidas.' });
     }
     setIsLoading(false);

@@ -1,3 +1,4 @@
+
 import { LoginForm } from '@/components/auth/login-form';
 import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,15 +16,12 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <LoginForm />
-        {/* No link para signup por enquanto, pode ser adicionado depois se necessário */}
-        {/* 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Não tem uma conta?{' '}
           <Link href="/signup" className="font-medium text-primary hover:underline">
             Crie aqui
           </Link>
         </p>
-        */}
       </CardContent>
     </Card>
   );
