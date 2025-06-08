@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation'; // Importado para navegação
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
@@ -16,7 +17,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientData {
-  id: string; // Adicionado para identificar unicamente o cliente, usando o email como ID
+  id: string;
   name: string;
   email: string;
 }
@@ -28,6 +29,7 @@ export default function ClientsListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isClientMounted, setIsClientMounted] = useState(false);
   const { toast } = useToast();
+  const router = useRouter(); // Hook do router para navegação
 
   useEffect(() => {
     setIsClientMounted(true);
@@ -38,8 +40,8 @@ export default function ClientsListPage() {
       try {
         const storedClients = localStorage.getItem(CLIENT_STORAGE_KEY);
         if (storedClients) {
-          const parsedClients = JSON.parse(storedClients).map((client: any, index: number) => ({
-            id: client.email, // Usando email como ID único por enquanto
+          const parsedClients = JSON.parse(storedClients).map((client: any) => ({
+            id: client.email, // Usando email como ID único
             name: client.name,
             email: client.email,
           }));
@@ -58,12 +60,9 @@ export default function ClientsListPage() {
     }
   }, [isClientMounted, toast]);
 
-  const handleClientAction = (action: string, clientName: string) => {
-    toast({
-      title: "Ação Selecionada",
-      description: `${action}: ${clientName}`,
-    });
-    // Lógica futura para cada ação virá aqui
+  // Função de navegação
+  const handleNavigate = (path: string) => {
+    router.push(path);
   };
 
   if (!isClientMounted || isLoading) {
@@ -114,16 +113,16 @@ export default function ClientsListPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleClientAction('Acompanhar Cliente', client.name)}>
+                    <DropdownMenuItem onClick={() => handleNavigate(`/clients/${client.id}/tracking`)}>
                       <Icons.Activity className="mr-2 h-4 w-4" />
                       Acompanhar Cliente
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleClientAction('Montar Treino', client.name)}>
+                    <DropdownMenuItem onClick={() => handleNavigate(`/clients/${client.id}/assign-training`)}>
                       <Icons.WorkoutLibrary className="mr-2 h-4 w-4" />
                       Montar Treino
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleClientAction('Editar Informações do Cliente', client.name)}>
+                    <DropdownMenuItem onClick={() => handleNavigate(`/clients/${client.id}/edit`)}>
                       <Icons.Edit className="mr-2 h-4 w-4" />
                       Editar Informações
                     </DropdownMenuItem>
@@ -132,7 +131,7 @@ export default function ClientsListPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Mais detalhes e ações específicas estarão disponíveis em breve.
+                  Clique no menu de opções para gerenciar este cliente.
                 </p>
               </CardContent>
             </Card>
