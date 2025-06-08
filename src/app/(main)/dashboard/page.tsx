@@ -2,30 +2,87 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { TrainingProgram, WorkoutDay, Exercise } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+
+const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
+const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
+
+interface ClientTrainingAssignments {
+  [clientId: string]: string; // clientId -> programId
+}
 
 export default function DashboardPage() {
   const [userType, setUserType] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  // const [userName, setUserName] = useState<string | null>(null); // Se quiser usar o nome
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  const [assignedProgram, setAssignedProgram] = useState<TrainingProgram | null>(null);
+  const [isLoadingProgram, setIsLoadingProgram] = useState(false);
+  const [hasNoProgram, setHasNoProgram] = useState(false);
 
   useEffect(() => {
-    // Estas operações devem ocorrer apenas no cliente
-    setUserType(localStorage.getItem('userType'));
-    setUserEmail(localStorage.getItem('userEmail'));
-    // setUserName(localStorage.getItem('userName')); // Se for usar o nome
+    setIsClientMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isClientMounted && typeof window !== 'undefined') {
+      const storedUserType = localStorage.getItem('userType');
+      const storedUserEmail = localStorage.getItem('userEmail');
+      setUserType(storedUserType);
+      setUserEmail(storedUserEmail);
+
+      if (storedUserType === 'client' && storedUserEmail) {
+        setIsLoadingProgram(true);
+        setHasNoProgram(false); // Reset
+        setAssignedProgram(null); // Reset
+
+        const assignmentsString = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
+        const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
+
+        if (assignmentsString && programsString) {
+          const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
+          const allPrograms: TrainingProgram[] = JSON.parse(programsString);
+          
+          const assignedProgramId = assignments[storedUserEmail];
+
+          if (assignedProgramId) {
+            const programDetails = allPrograms.find(p => p.id === assignedProgramId);
+            if (programDetails) {
+              setAssignedProgram(programDetails);
+            } else {
+              // Program ID assigned but program not found in library (should ideally not happen)
+              console.warn(`Assigned program with ID ${assignedProgramId} not found in library.`);
+              setHasNoProgram(true); // Treat as no program for UI
+            }
+          } else {
+            setHasNoProgram(true);
+          }
+        } else {
+          setHasNoProgram(true); // No assignments or no programs in library
+        }
+        setIsLoadingProgram(false);
+      }
+    }
+  }, [isClientMounted]);
 
   let welcomeMessage = 'Bem-vindo(a)!';
   if (userType === 'personal') {
     welcomeMessage = `Bem-vindo(a), Personal Trainer ${userEmail ? `(${userEmail})` : ''}!`;
   } else if (userType === 'client') {
-    // Poderia usar userName aqui se salvo no localStorage:
-    // welcomeMessage = `Bem-vindo(a), Cliente ${userName || (userEmail ? `(${userEmail})` : '')}!`;
     welcomeMessage = `Bem-vindo(a), Cliente ${userEmail ? `(${userEmail})` : ''}!`;
   }
 
+  const renderExerciseDetails = (exercise: Exercise) => (
+    <div className="ml-4 pl-4 border-l border-muted-foreground/30 py-1 my-1 text-sm">
+      <p><strong>Séries:</strong> {exercise.series}</p>
+      <p><strong>Repetições:</strong> {exercise.repetitions}</p>
+      <p><strong>Intervalo:</strong> {exercise.interval}</p>
+      {exercise.observations && <p className="text-xs mt-1"><em>Obs: {exercise.observations}</em></p>}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -35,14 +92,76 @@ export default function DashboardPage() {
           <CardDescription>Este é o seu painel de controle.</CardDescription>
         </CardHeader>
         <CardContent>
-          {userType === 'client' ? (
-            <p>Explore seus treinos e dietas atribuídos aqui em breve!</p>
-          ) : (
-            <p>Comece a gerenciar seus clientes, treinos e dietas.</p>
+          {userType === 'personal' && (
+            <>
+              <p>Comece a gerenciar seus clientes, treinos e programas.</p>
+              <div className="mt-6 flex items-center justify-center">
+                <Icons.Activity className="h-24 w-24 text-primary/70" />
+              </div>
+            </>
           )}
-          <div className="mt-6 flex items-center justify-center">
-            <Icons.Activity className="h-24 w-24 text-primary/70" />
-          </div>
+
+          {userType === 'client' && (
+            <>
+              {isLoadingProgram && (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <Icons.Activity className="h-10 w-10 text-primary animate-spin mb-3" />
+                  <p className="text-muted-foreground">Carregando seu treino...</p>
+                </div>
+              )}
+
+              {!isLoadingProgram && assignedProgram && (
+                <div className="space-y-4">
+                  <h2 className="text-2xl font-semibold text-primary flex items-center">
+                    <Icons.WorkoutPlan className="mr-3 h-7 w-7" />
+                    Seu Treino Atribuído: {assignedProgram.name}
+                  </h2>
+                  {assignedProgram.workoutDays.length > 0 ? (
+                    <Accordion type="single" collapsible className="w-full">
+                      {assignedProgram.workoutDays.map((day, index) => (
+                        <AccordionItem value={`day-${index}`} key={day.id}>
+                          <AccordionTrigger className="text-lg hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-sm">{day.name}</Badge> 
+                                ({day.exercises.length} exercício(s))
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            {day.exercises.length > 0 ? (
+                              <ul className="space-y-3 pt-2">
+                                {day.exercises.map((exercise) => (
+                                  <li key={exercise.id} className="p-3 border rounded-md shadow-xs bg-card">
+                                    <p className="font-medium text-base">{exercise.name}</p>
+                                    {renderExerciseDetails(exercise)}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                                <p className="text-sm text-muted-foreground py-2">Nenhum exercício neste dia.</p>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  ) : (
+                    <p className="text-muted-foreground">Este programa de treino ainda não tem dias de treino configurados.</p>
+                  )}
+                </div>
+              )}
+
+              {!isLoadingProgram && hasNoProgram && (
+                 <Card className="mt-4 border-dashed border-primary/50 bg-primary/5">
+                    <CardContent className="pt-6 text-center">
+                        <Icons.WorkoutPlan className="h-12 w-12 text-primary/70 mx-auto mb-3" />
+                        <p className="font-semibold text-lg text-primary">Nenhum Treino Atribuído</p>
+                        <p className="text-muted-foreground mt-1">
+                        Você ainda não tem um programa de treino. Fale com seu personal trainer para que ele possa montar um para você!
+                        </p>
+                    </CardContent>
+                </Card>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
