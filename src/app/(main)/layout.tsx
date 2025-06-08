@@ -64,9 +64,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/training-library" className="text-muted-foreground transition-colors hover:text-foreground">
                   Biblioteca de Treinos
                 </Link>
-                <Link href="/diet-library" className="text-muted-foreground transition-colors hover:text-foreground">
-                  Biblioteca de Dietas
-                </Link>
               </>
             )}
             {/* Adicionar mais links de navegação aqui conforme necessário */}

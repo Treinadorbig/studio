@@ -5,7 +5,6 @@ import {
   Users, // Para clientes
   ClipboardList, // Para planos de treino / Biblioteca de Treinos
   CalendarDays, // Para agendamento
-  Apple, // Para planos de dieta / Biblioteca de Dietas
   LogOut, // Para logout
   Settings, // Para configurações
   PlusCircle, // Para adicionar
@@ -24,9 +23,8 @@ export const Icons = {
   Users: (props: LucideProps) => <Users {...props} />,
   WorkoutPlan: (props: LucideProps) => <ClipboardList {...props} />, // Pode ser usado para planos de cliente
   WorkoutLibrary: (props: LucideProps) => <BookOpen {...props} />, // Ícone para a biblioteca de treinos
-  DietLibrary: (props: LucideProps) => <Apple {...props} />, // Ícone para a biblioteca de dietas
   Schedule: (props: LucideProps) => <CalendarDays {...props} />,
-  DietPlan: (props: LucideProps) => <Apple {...props} />, // Ícone para planos de dieta (pode ser o mesmo da lib)
+  DietPlan: (props: LucideProps) => <ClipboardList {...props} />, // Reutilizando um ícone existente, ajuste se necessário
   Logout: (props: LucideProps) => <LogOut {...props} />,
   Settings: (props: LucideProps) => <Settings {...props} />,
   Add: (props: LucideProps) => <PlusCircle {...props} />,

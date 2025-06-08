@@ -40,9 +40,3 @@ export interface TrainingProgram {
   name: string;
   workoutDays: WorkoutDay[];
 }
-
-export interface DietItem {
-  id: string;
-  foodName: string;
-  quantity: string;
-}

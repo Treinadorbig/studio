@@ -110,7 +110,6 @@ export default function ClientsListPage() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Icons.Settings className="h-4 w-4" /> 
-                      {/* Alterado para Settings, mas poderia ser MoreVertical se preferir */}
                       <span className="sr-only">Opções do cliente</span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -122,10 +121,6 @@ export default function ClientsListPage() {
                     <DropdownMenuItem onClick={() => handleClientAction('Montar Treino', client.name)}>
                       <Icons.WorkoutLibrary className="mr-2 h-4 w-4" />
                       Montar Treino
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleClientAction('Montar Dieta', client.name)}>
-                      <Icons.DietLibrary className="mr-2 h-4 w-4" />
-                      Montar Dieta
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleClientAction('Editar Informações do Cliente', client.name)}>
