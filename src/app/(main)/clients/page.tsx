@@ -5,11 +5,20 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from '@/hooks/use-toast';
 
 interface ClientData {
+  id: string; // Adicionado para identificar unicamente o cliente, usando o email como ID
   name: string;
   email: string;
-  // A senha não é incluída aqui por segurança e porque não é necessária para exibição
 }
 
 const CLIENT_STORAGE_KEY = 'clientAuthData';
@@ -18,6 +27,7 @@ export default function ClientsListPage() {
   const [clients, setClients] = useState<ClientData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClientMounted, setIsClientMounted] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClientMounted(true);
@@ -28,8 +38,8 @@ export default function ClientsListPage() {
       try {
         const storedClients = localStorage.getItem(CLIENT_STORAGE_KEY);
         if (storedClients) {
-          // Parse e mapeie para ClientData, omitindo a senha
-          const parsedClients = JSON.parse(storedClients).map((client: any) => ({
+          const parsedClients = JSON.parse(storedClients).map((client: any, index: number) => ({
+            id: client.email, // Usando email como ID único por enquanto
             name: client.name,
             email: client.email,
           }));
@@ -37,12 +47,24 @@ export default function ClientsListPage() {
         }
       } catch (error) {
         console.error("Erro ao carregar clientes do localStorage:", error);
-        // Tratar erro, talvez mostrar um toast
+        toast({
+          title: "Erro ao carregar clientes",
+          description: "Não foi possível buscar os dados dos clientes.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     }
-  }, [isClientMounted]);
+  }, [isClientMounted, toast]);
+
+  const handleClientAction = (action: string, clientName: string) => {
+    toast({
+      title: "Ação Selecionada",
+      description: `${action}: ${clientName}`,
+    });
+    // Lógica futura para cada ação virá aqui
+  };
 
   if (!isClientMounted || isLoading) {
     return (
@@ -69,25 +91,53 @@ export default function ClientsListPage() {
           <Icons.Users className="mr-3 h-8 w-8 text-primary" />
           Meus Clientes
         </h1>
-        {/* Futuramente, um botão para adicionar cliente manualmente poderia vir aqui */}
       </div>
       <Separator />
 
       {clients.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clients.map((client, index) => (
-            <Card key={index} className="shadow-lg rounded-lg">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center">
-                  <Icons.Users className="mr-2 h-5 w-5 text-primary/80" /> 
-                  {client.name}
-                </CardTitle>
-                <CardDescription>{client.email}</CardDescription>
+          {clients.map((client) => (
+            <Card key={client.id} className="shadow-lg rounded-lg">
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center">
+                    <Icons.Users className="mr-2 h-5 w-5 text-primary/80" />
+                    {client.name}
+                  </CardTitle>
+                  <CardDescription>{client.email}</CardDescription>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Icons.Settings className="h-4 w-4" /> 
+                      {/* Alterado para Settings, mas poderia ser MoreVertical se preferir */}
+                      <span className="sr-only">Opções do cliente</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleClientAction('Acompanhar Cliente', client.name)}>
+                      <Icons.Activity className="mr-2 h-4 w-4" />
+                      Acompanhar Cliente
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleClientAction('Montar Treino', client.name)}>
+                      <Icons.WorkoutLibrary className="mr-2 h-4 w-4" />
+                      Montar Treino
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleClientAction('Montar Dieta', client.name)}>
+                      <Icons.DietLibrary className="mr-2 h-4 w-4" />
+                      Montar Dieta
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleClientAction('Editar Informações do Cliente', client.name)}>
+                      <Icons.Edit className="mr-2 h-4 w-4" />
+                      Editar Informações
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
               <CardContent>
-                {/* Futuramente, adicionar mais detalhes ou ações como "Ver Detalhes" */}
                 <p className="text-sm text-muted-foreground">
-                  Mais detalhes do cliente estarão disponíveis em breve.
+                  Mais detalhes e ações específicas estarão disponíveis em breve.
                 </p>
               </CardContent>
             </Card>
