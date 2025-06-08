@@ -58,6 +58,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </Link>
             {userType === 'personal' && (
               <>
+                <Link href="/clients" className="text-muted-foreground transition-colors hover:text-foreground">
+                  Meus Clientes
+                </Link>
                 <Link href="/training-library" className="text-muted-foreground transition-colors hover:text-foreground">
                   Biblioteca de Treinos
                 </Link>
