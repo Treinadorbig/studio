@@ -238,10 +238,11 @@ export default function DashboardPage() {
   };
 
   const calculateProgress = () => {
-    if (!clientProgress || !assignedTrainingInfo?.program.workoutDays.length) return 0;
-    const totalDays = assignedTrainingInfo.program.workoutDays.length;
+    if (!clientProgress) return 0;
+    const targetTotalTreinos = 22;
     const completedUniqueDays = clientProgress.completedWorkoutDayIds.length;
-    return totalDays > 0 ? (completedUniqueDays / totalDays) * 100 : 0;
+    const progress = (completedUniqueDays / targetTotalTreinos) * 100;
+    return Math.min(progress, 100); // Cap progress at 100%
   };
 
   const progressPercentage = calculateProgress();
@@ -302,12 +303,12 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-xl">Progresso do Programa</CardTitle>
+                      <CardTitle className="text-xl">Progresso do Objetivo Atual</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <Progress value={progressPercentage} className="w-full" />
                       <p className="text-sm text-muted-foreground">
-                        {clientProgress.completedWorkoutDayIds.length} de {assignedTrainingInfo.program.workoutDays.length} dias completados.
+                        Você completou {clientProgress.completedWorkoutDayIds.length} de 22 treinos para o objetivo.
                       </p>
                       {clientProgress.lastCompletionDate && (
                         <p className="text-xs text-muted-foreground">
