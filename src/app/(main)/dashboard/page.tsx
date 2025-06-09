@@ -2,16 +2,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { TrainingProgram, WorkoutDay, Exercise } from '@/lib/types';
+import type { TrainingProgram, WorkoutDay, Exercise, User as ClientUserType } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button'; // Import Button
+import { Button } from '@/components/ui/button';
 
 const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
 const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
+const CLIENT_AUTH_DATA_KEY = 'clientAuthData';
 
 interface ClientTrainingAssignments {
   [clientId: string]: string; // clientId (raw email) -> programId
@@ -20,6 +21,7 @@ interface ClientTrainingAssignments {
 export default function DashboardPage() {
   const [userType, setUserType] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [clientName, setClientName] = useState<string | null>(null);
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [assignedProgram, setAssignedProgram] = useState<TrainingProgram | null>(null);
   const [isLoadingProgram, setIsLoadingProgram] = useState(false);
@@ -32,11 +34,25 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isClientMounted && typeof window !== 'undefined') {
       const storedUserType = localStorage.getItem('userType');
-      const storedUserEmail = localStorage.getItem('userEmail'); // This is the raw email
+      const storedUserEmail = localStorage.getItem('userEmail');
       setUserType(storedUserType);
       setUserEmail(storedUserEmail);
 
       if (storedUserType === 'client' && storedUserEmail) {
+        // Fetch client's name
+        const clientAuthDataString = localStorage.getItem(CLIENT_AUTH_DATA_KEY);
+        if (clientAuthDataString) {
+          try {
+            const allClientUsers: ClientUserType[] = JSON.parse(clientAuthDataString);
+            const currentClientUser = allClientUsers.find(c => c.email === storedUserEmail);
+            if (currentClientUser && currentClientUser.name) {
+              setClientName(currentClientUser.name);
+            }
+          } catch (e) {
+            console.error("Error parsing client auth data:", e);
+          }
+        }
+        
         setIsLoadingProgram(true);
         setHasNoProgram(false); 
         setAssignedProgram(null); 
@@ -45,21 +61,25 @@ export default function DashboardPage() {
         const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
 
         if (assignmentsString && programsString) {
-          const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
-          const allPrograms: TrainingProgram[] = JSON.parse(programsString);
-          
-          // Use the raw storedUserEmail directly as the key, as it's already decoded
-          const assignedProgramId = assignments[storedUserEmail]; 
+          try {
+            const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
+            const allPrograms: TrainingProgram[] = JSON.parse(programsString);
+            
+            const assignedProgramId = assignments[storedUserEmail]; 
 
-          if (assignedProgramId) {
-            const programDetails = allPrograms.find(p => p.id === assignedProgramId);
-            if (programDetails) {
-              setAssignedProgram(programDetails);
+            if (assignedProgramId) {
+              const programDetails = allPrograms.find(p => p.id === assignedProgramId);
+              if (programDetails) {
+                setAssignedProgram(programDetails);
+              } else {
+                console.warn(`Assigned program with ID ${assignedProgramId} not found in library.`);
+                setHasNoProgram(true); 
+              }
             } else {
-              console.warn(`Assigned program with ID ${assignedProgramId} not found in library.`);
-              setHasNoProgram(true); 
+              setHasNoProgram(true);
             }
-          } else {
+          } catch (e) {
+            console.error("Error parsing training data:", e);
             setHasNoProgram(true);
           }
         } else {
@@ -74,9 +94,14 @@ export default function DashboardPage() {
   if (userType === 'personal') {
     welcomeMessage = `Olá, Treinador Big! Bom trabalho!`;
   } else if (userType === 'client') {
-    // userEmail here is the raw email, decodeURIComponent is not strictly necessary
-    // if it's guaranteed to be plain, but harmless for display.
-    welcomeMessage = `Bem-vindo(a), Cliente ${userEmail ? `(${userEmail})` : ''}!`;
+    if (clientName) {
+      const firstName = clientName.split(' ')[0];
+      welcomeMessage = `Olá ${firstName}, bom treino pra você!`;
+    } else if (userEmail) {
+      welcomeMessage = `Bem-vindo(a), Cliente (${userEmail})!`;
+    } else {
+      welcomeMessage = `Bem-vindo(a), Cliente!`;
+    }
   }
 
   const renderExerciseDetails = (exercise: Exercise) => (
@@ -197,4 +222,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
