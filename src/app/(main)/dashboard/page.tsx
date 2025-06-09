@@ -106,6 +106,7 @@ export default function DashboardPage() {
                     lastCompletionDate: undefined,
                   };
                   setClientProgress(newProgress);
+                  // Do not save here, save only on action (e.g. finishing a day)
                 }
 
               } else {
@@ -121,7 +122,7 @@ export default function DashboardPage() {
         setIsLoadingProgram(false);
       }
     }
-  }, [isClientMounted, userEmail]); // Added userEmail to dependencies
+  }, [isClientMounted, userEmail]);
   
   useEffect(() => {
     if (activeAccordionItem && clientProgress && assignedTrainingInfo) {
@@ -153,17 +154,18 @@ export default function DashboardPage() {
       } else {
         newSet.add(exerciseId);
       }
-      // Temporarily store in-progress ticks for the current day
+      // Save in-progress ticks to clientProgress state but not to localStorage yet
       if (clientProgress && userEmail && assignedTrainingInfo) {
-        const tempProgress = {
-            ...clientProgress,
-            checkedExercisesByDay: {
-                ...clientProgress.checkedExercisesByDay,
-                [dayId]: Array.from(newSet),
-            }
-        };
-        // Update state to reflect temporary changes if needed, or rely on saving during finalization
-         setClientProgress(tempProgress); 
+        setClientProgress(prevProgress => {
+            if (!prevProgress) return null;
+            return {
+                ...prevProgress,
+                checkedExercisesByDay: {
+                    ...prevProgress.checkedExercisesByDay,
+                    [dayId]: Array.from(newSet),
+                }
+            };
+        });
       }
       return newSet;
     });
@@ -181,12 +183,9 @@ export default function DashboardPage() {
     const updatedProgress: ClientProgramProgress = {
       ...clientProgress,
       completedWorkoutDayIds: newCompletedWorkoutDayIds,
-      // Store current ticks for the session being finalized, then reset for next time.
-      // This part might need adjustment if historical ticks per session are needed.
-      // For now, we are resetting it for the next attempt.
       checkedExercisesByDay: {
         ...clientProgress.checkedExercisesByDay,
-        [dayId]: [], // Resetting for the next load via useEffect
+        [dayId]: [], // Reset checkboxes for this day for the next session
       },
       lastCompletionDate: new Date().toISOString(),
     };
@@ -363,13 +362,13 @@ export default function DashboardPage() {
                         onValueChange={setActiveAccordionItem}
                     >
                       {assignedTrainingInfo.program.workoutDays.map((day, index) => {
-                        const isDayMarkedAsCompletedForProgress = clientProgress.completedWorkoutDayIds.includes(day.id);
+                        // This variable indicates if the day has ever contributed to the overall progress
+                        // const isDayMarkedAsCompletedForProgress = clientProgress.completedWorkoutDayIds.includes(day.id);
                         return (
                           <AccordionItem value={`day-${index}`} key={day.id}>
                             <AccordionTrigger className="text-lg hover:no-underline">
                               <div className="flex items-center gap-2">
-                                {isDayMarkedAsCompletedForProgress && <Icons.Success className="h-5 w-5 text-green-500" />}
-                                <Badge variant={isDayMarkedAsCompletedForProgress ? "default" : "secondary"} className={`text-sm ${isDayMarkedAsCompletedForProgress ? 'bg-green-500 hover:bg-green-600' : ''}`}>{day.name}</Badge> 
+                                <Badge variant="secondary" className="text-sm">{day.name}</Badge> 
                                 <span className="text-sm text-muted-foreground font-normal"> - {getExerciseCountText(day.exercises.length)}</span>
                               </div>
                             </AccordionTrigger>
