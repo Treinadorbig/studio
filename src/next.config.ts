@@ -23,7 +23,9 @@ const nextConfig: NextConfig = {
   // embora o next.config.ts da raiz seja o principal.
   allowedDevOrigins: [
     'https://6000-firebase-studio-1749179803855.cluster-qhrn7lb3szcfcud6uanedbkjnm.cloudworkstations.dev',
-    'http://localhost:9002', 
+    'http://localhost:9002',
+    'https://estudio-smoky-eta.vercel.app',
+    'https://estudio-charles-nogueira-s-proje-7osq93d2p.vercel.app',
   ],
 };
 
