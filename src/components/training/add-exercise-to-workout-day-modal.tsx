@@ -19,7 +19,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent } from '../ui/card';
+import { Card } from '@/components/ui/card'; // Changed import path and removed CardContent
 
 interface AddExerciseToWorkoutDayModalProps {
   isOpen: boolean;
