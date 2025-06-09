@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Icons } from '@/components/icons';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button'; // Import Button
 
 const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
 const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
@@ -36,8 +38,8 @@ export default function DashboardPage() {
 
       if (storedUserType === 'client' && storedUserEmail) {
         setIsLoadingProgram(true);
-        setHasNoProgram(false); // Reset
-        setAssignedProgram(null); // Reset
+        setHasNoProgram(false); 
+        setAssignedProgram(null); 
 
         const assignmentsString = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
         const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
@@ -46,22 +48,21 @@ export default function DashboardPage() {
           const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
           const allPrograms: TrainingProgram[] = JSON.parse(programsString);
           
-          const assignedProgramId = assignments[storedUserEmail];
+          const assignedProgramId = assignments[decodeURIComponent(storedUserEmail)]; // Use decoded email
 
           if (assignedProgramId) {
             const programDetails = allPrograms.find(p => p.id === assignedProgramId);
             if (programDetails) {
               setAssignedProgram(programDetails);
             } else {
-              // Program ID assigned but program not found in library (should ideally not happen)
               console.warn(`Assigned program with ID ${assignedProgramId} not found in library.`);
-              setHasNoProgram(true); // Treat as no program for UI
+              setHasNoProgram(true); 
             }
           } else {
             setHasNoProgram(true);
           }
         } else {
-          setHasNoProgram(true); // No assignments or no programs in library
+          setHasNoProgram(true); 
         }
         setIsLoadingProgram(false);
       }
@@ -70,9 +71,9 @@ export default function DashboardPage() {
 
   let welcomeMessage = 'Bem-vindo(a)!';
   if (userType === 'personal') {
-    welcomeMessage = `Bem-vindo(a), Personal Trainer ${userEmail ? `(${userEmail})` : ''}!`;
+    welcomeMessage = `Olá, Treinador Big! Bom trabalho!`;
   } else if (userType === 'client') {
-    welcomeMessage = `Bem-vindo(a), Cliente ${userEmail ? `(${userEmail})` : ''}!`;
+    welcomeMessage = `Bem-vindo(a), Cliente ${userEmail ? `(${decodeURIComponent(userEmail)})` : ''}!`;
   }
 
   const renderExerciseDetails = (exercise: Exercise) => (
@@ -89,16 +90,42 @@ export default function DashboardPage() {
       <Card className="shadow-lg rounded-lg">
         <CardHeader>
           <CardTitle className="text-3xl font-semibold">{welcomeMessage}</CardTitle>
-          <CardDescription>Este é o seu painel de controle.</CardDescription>
+          <CardDescription>
+            {userType === 'personal' ? 'Acesse as funcionalidades abaixo para gerenciar sua academia.' : 'Este é o seu painel de controle.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {userType === 'personal' && (
-            <>
-              <p>Comece a gerenciar seus clientes, treinos e programas.</p>
-              <div className="mt-6 flex items-center justify-center">
-                <Icons.Activity className="h-24 w-24 text-primary/70" />
-              </div>
-            </>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Link href="/clients" passHref>
+                <Card className="hover:shadow-xl transition-shadow duration-300 ease-in-out cursor-pointer rounded-lg">
+                  <CardHeader className="flex flex-row items-center gap-4">
+                    <Icons.Users className="h-10 w-10 text-primary" />
+                    <div>
+                      <CardTitle className="text-xl">Gerenciar Clientes</CardTitle>
+                      <CardDescription>Visualize e gerencie seus clientes.</CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                     <Button className="w-full mt-2">Acessar Clientes</Button>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/training-library" passHref>
+                <Card className="hover:shadow-xl transition-shadow duration-300 ease-in-out cursor-pointer rounded-lg">
+                  <CardHeader className="flex flex-row items-center gap-4">
+                    <Icons.WorkoutLibrary className="h-10 w-10 text-primary" />
+                    <div>
+                      <CardTitle className="text-xl">Biblioteca de Treinos</CardTitle>
+                      <CardDescription>Crie e organize programas e exercícios.</CardDescription>
+                    </div>
+                  </CardHeader>
+                   <CardContent>
+                     <Button className="w-full mt-2">Acessar Biblioteca</Button>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
           )}
 
           {userType === 'client' && (

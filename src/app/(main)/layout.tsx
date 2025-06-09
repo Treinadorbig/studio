@@ -11,6 +11,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const { toast } = useToast();
   const [isClientMounted, setIsClientMounted] = useState(false);
+  // userType state is not directly used here anymore for nav links,
+  // but keeping it in case it's needed for other header logic in the future.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userType, setUserType] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,22 +55,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               BigTreino
             </span>
           </Link>
-          <nav className="flex flex-1 items-center gap-4 text-sm">
-            <Link href="/dashboard" className="text-muted-foreground transition-colors hover:text-foreground">
-              Dashboard
-            </Link>
-            {userType === 'personal' && (
-              <>
-                <Link href="/clients" className="text-muted-foreground transition-colors hover:text-foreground">
-                  Meus Clientes
-                </Link>
-                <Link href="/training-library" className="text-muted-foreground transition-colors hover:text-foreground">
-                  Biblioteca de Treinos
-                </Link>
-              </>
-            )}
-            {/* Adicionar mais links de navegação aqui conforme necessário */}
-          </nav>
+          <div className="flex-1">
+            {/* Navigation links removed from here */}
+          </div>
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
