@@ -112,6 +112,12 @@ export default function DashboardPage() {
     </div>
   );
 
+  const getExerciseCountText = (count: number) => {
+    if (count === 0) return "Nenhum exercício";
+    if (count === 1) return "1 exercício";
+    return `${count} exercícios`;
+  };
+
   return (
     <div className="space-y-6">
       <Card className="shadow-lg rounded-lg">
@@ -177,7 +183,7 @@ export default function DashboardPage() {
                           <AccordionTrigger className="text-lg hover:no-underline">
                             <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="text-sm">{day.name}</Badge> 
-                                ({day.exercises.length} exercício(s))
+                                <span className="text-sm text-muted-foreground font-normal"> - {getExerciseCountText(day.exercises.length)}</span>
                             </div>
                           </AccordionTrigger>
                           <AccordionContent>
