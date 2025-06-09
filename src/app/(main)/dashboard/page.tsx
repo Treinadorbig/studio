@@ -39,7 +39,6 @@ export default function DashboardPage() {
       setUserEmail(storedUserEmail);
 
       if (storedUserType === 'client' && storedUserEmail) {
-        // Fetch client's name
         const clientAuthDataString = localStorage.getItem(CLIENT_AUTH_DATA_KEY);
         if (clientAuthDataString) {
           try {

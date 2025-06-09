@@ -35,7 +35,7 @@ export default function ClientTrackingPage() {
 
   useEffect(() => {
     if (isClientMounted && typeof window !== 'undefined' && clientId) {
-      setClientName(decodeURIComponent(clientId)); // Assuming clientId is the email/identifier used for display
+      setClientName(decodeURIComponent(clientId)); 
 
       const assignmentsString = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
       const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
@@ -44,7 +44,10 @@ export default function ClientTrackingPage() {
         const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
         const allPrograms: TrainingProgram[] = JSON.parse(programsString);
         
-        const assignedProgramId = assignments[clientId];
+        // Use o clientId decodificado para buscar a atribuição
+        const decodedClientId = decodeURIComponent(clientId);
+        const assignedProgramId = assignments[decodedClientId];
+
 
         if (assignedProgramId) {
           const programDetails = allPrograms.find(p => p.id === assignedProgramId);
@@ -140,7 +143,7 @@ export default function ClientTrackingPage() {
                       Este cliente ainda não tem um programa de treino atribuído. Você pode atribuir um na seção "Montar Treino".
                     </p>
                      <Button asChild className="mt-4">
-                        <Link href={`/clients/${clientId}/assign-training`}>
+                        <Link href={`/clients/${clientId}/assign-training`}> {/* clientId aqui é o original da rota, pode estar codificado */}
                             <Icons.Add className="mr-2 h-4 w-4" />
                             Atribuir Treino Agora
                         </Link>
