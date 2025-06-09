@@ -13,13 +13,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { User as ClientUser } from '@/lib/types'; // Assuming User type has name, email, password
+import type { User as ClientUser } from '@/lib/types';
 
 const CLIENT_STORAGE_KEY = 'clientAuthData';
 
 const editClientSchema = z.object({
   name: z.string().min(2, { message: 'Nome deve ter pelo menos 2 caracteres.' }),
-  email: z.string().email().readonly(), // Email will be displayed but not editable for now
+  email: z.string().email().readonly(), // Email will be displayed but not editable
 });
 
 type EditClientFormValues = z.infer<typeof editClientSchema>;
@@ -27,32 +27,38 @@ type EditClientFormValues = z.infer<typeof editClientSchema>;
 export default function EditClientInfoPage() {
   const params = useParams();
   const router = useRouter();
-  const clientId = params.clientId as string; // This is the email
+  const encodedClientIdFromParams = params.clientId as string; // This is potentially URL-encoded
   const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [currentClientName, setCurrentClientName] = useState('');
+  
+  // Decode the clientId once
+  const [decodedClientId, setDecodedClientId] = useState('');
 
   const form = useForm<EditClientFormValues>({
     resolver: zodResolver(editClientSchema),
     defaultValues: {
       name: '',
-      email: clientId,
+      email: '', // Will be set after decoding and fetching client
     },
   });
 
   useEffect(() => {
     setIsClientMounted(true);
-  }, []);
+    if (encodedClientIdFromParams) {
+      setDecodedClientId(decodeURIComponent(encodedClientIdFromParams));
+    }
+  }, [encodedClientIdFromParams]);
 
   useEffect(() => {
-    if (isClientMounted && typeof window !== 'undefined' && clientId) {
+    if (isClientMounted && typeof window !== 'undefined' && decodedClientId) {
       const storedClients = localStorage.getItem(CLIENT_STORAGE_KEY);
       if (storedClients) {
         const clients: (ClientUser & { password?: string })[] = JSON.parse(storedClients);
-        const clientToEdit = clients.find(c => c.email === clientId);
+        const clientToEdit = clients.find(c => c.email === decodedClientId); // Use decodedClientId for lookup
         if (clientToEdit) {
           form.reset({ name: clientToEdit.name, email: clientToEdit.email });
           setCurrentClientName(clientToEdit.name);
@@ -63,15 +69,15 @@ export default function EditClientInfoPage() {
       }
       setIsLoading(false);
     }
-  }, [clientId, isClientMounted, form, router, toast]);
+  }, [decodedClientId, isClientMounted, form, router, toast]);
 
   const onSubmit = async (data: EditClientFormValues) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && decodedClientId) {
       setIsSubmitting(true);
       const storedClients = localStorage.getItem(CLIENT_STORAGE_KEY);
       let clients: (ClientUser & { password?: string })[] = storedClients ? JSON.parse(storedClients) : [];
       
-      const clientIndex = clients.findIndex(c => c.email === clientId);
+      const clientIndex = clients.findIndex(c => c.email === decodedClientId); // Use decodedClientId for lookup
       if (clientIndex > -1) {
         clients[clientIndex] = { ...clients[clientIndex], name: data.name };
         localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(clients));
@@ -79,8 +85,7 @@ export default function EditClientInfoPage() {
           title: 'Informações Atualizadas!',
           description: `O nome do cliente ${data.name} foi atualizado com sucesso.`,
         });
-        setCurrentClientName(data.name); // Update displayed name
-        // router.push('/clients'); // Optionally redirect
+        setCurrentClientName(data.name);
       } else {
         toast({ title: "Erro ao Atualizar", description: "Não foi possível encontrar o cliente para atualizar.", variant: "destructive" });
       }
@@ -103,7 +108,7 @@ export default function EditClientInfoPage() {
               <Icons.Edit className="mr-3 h-8 w-8 text-primary" />
               Editar Informações do Cliente
             </CardTitle>
-            <CardDescription>Cliente: {clientId ? decodeURIComponent(clientId) : 'Carregando...'}</CardDescription>
+            <CardDescription>Cliente: {decodedClientId ? decodedClientId : (encodedClientIdFromParams || 'Carregando...')}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Icons.Activity className="h-12 w-12 text-primary animate-spin mb-4" />
@@ -130,7 +135,7 @@ export default function EditClientInfoPage() {
                 <Icons.Edit className="mr-3 h-8 w-8 text-primary" />
                 Editar Informações do Cliente
               </CardTitle>
-              <CardDescription>Cliente: {currentClientName || decodeURIComponent(clientId)}</CardDescription>
+              <CardDescription>Cliente: {currentClientName || decodedClientId}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
