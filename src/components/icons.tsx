@@ -14,6 +14,7 @@ import {
   CheckCircle2, // Para sucesso
   Menu, // Para menu mobile
   BookOpen, // Novo ícone para biblioteca de treinos
+  Check, // Adicionado para o botão "Finalizar Treino"
   type LucideProps,
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export const Icons = {
   Warning: (props: LucideProps) => <AlertTriangle {...props} />,
   Success: (props: LucideProps) => <CheckCircle2 {...props} />,
   Menu: (props: LucideProps) => <Menu {...props} />,
+  Check: (props: LucideProps) => <Check {...props} />, // Definição para Icons.Check
 };
 
 export default Icons;
