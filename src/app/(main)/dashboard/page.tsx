@@ -14,7 +14,7 @@ const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
 const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
 
 interface ClientTrainingAssignments {
-  [clientId: string]: string; // clientId -> programId
+  [clientId: string]: string; // clientId (raw email) -> programId
 }
 
 export default function DashboardPage() {
@@ -32,7 +32,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isClientMounted && typeof window !== 'undefined') {
       const storedUserType = localStorage.getItem('userType');
-      const storedUserEmail = localStorage.getItem('userEmail');
+      const storedUserEmail = localStorage.getItem('userEmail'); // This is the raw email
       setUserType(storedUserType);
       setUserEmail(storedUserEmail);
 
@@ -48,7 +48,8 @@ export default function DashboardPage() {
           const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
           const allPrograms: TrainingProgram[] = JSON.parse(programsString);
           
-          const assignedProgramId = assignments[decodeURIComponent(storedUserEmail)]; // Use decoded email
+          // Use the raw storedUserEmail directly as the key, as it's already decoded
+          const assignedProgramId = assignments[storedUserEmail]; 
 
           if (assignedProgramId) {
             const programDetails = allPrograms.find(p => p.id === assignedProgramId);
@@ -73,7 +74,9 @@ export default function DashboardPage() {
   if (userType === 'personal') {
     welcomeMessage = `Olá, Treinador Big! Bom trabalho!`;
   } else if (userType === 'client') {
-    welcomeMessage = `Bem-vindo(a), Cliente ${userEmail ? `(${decodeURIComponent(userEmail)})` : ''}!`;
+    // userEmail here is the raw email, decodeURIComponent is not strictly necessary
+    // if it's guaranteed to be plain, but harmless for display.
+    welcomeMessage = `Bem-vindo(a), Cliente ${userEmail ? `(${userEmail})` : ''}!`;
   }
 
   const renderExerciseDetails = (exercise: Exercise) => (
@@ -194,3 +197,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
