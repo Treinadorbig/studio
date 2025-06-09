@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Adicionando allowedDevOrigins aqui também para consistência,
+  // embora o next.config.ts da raiz seja o principal.
+  allowedDevOrigins: [
+    'https://6000-firebase-studio-1749179803855.cluster-qhrn7lb3szcfcud6uanedbkjnm.cloudworkstations.dev',
+    'http://localhost:9002', 
+  ],
 };
 
 export default nextConfig;
