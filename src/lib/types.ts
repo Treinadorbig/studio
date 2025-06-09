@@ -40,3 +40,14 @@ export interface TrainingProgram {
   name: string;
   workoutDays: WorkoutDay[];
 }
+
+// Novo tipo para armazenar o progresso do cliente
+export interface ClientProgramProgress {
+  userId: string; // Email do cliente
+  programId: string; // ID do programa atualmente atribuído
+  completedWorkoutDayIds: string[]; // Array de IDs dos dias de treino finalizados
+  checkedExercisesByDay: {
+    [dayId: string]: string[]; // Mapeia dayId para um array de exerciseIds marcados
+  };
+  lastCompletionDate?: string; // Data da última finalização de um dia de treino (ISO string)
+}
