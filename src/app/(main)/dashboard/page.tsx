@@ -45,7 +45,6 @@ export default function DashboardPage() {
   const [isLoadingProgram, setIsLoadingProgram] = useState(false);
   const [hasNoProgram, setHasNoProgram] = useState(false);
 
-  // Estado para progresso do cliente
   const [clientProgress, setClientProgress] = useState<ClientProgramProgress | null>(null);
   const [currentDayCheckedExercises, setCurrentDayCheckedExercises] = useState<Set<string>>(new Set());
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
@@ -55,7 +54,6 @@ export default function DashboardPage() {
     setIsClientMounted(true);
   }, []);
 
-  // Carregar dados do usuário e progresso
   useEffect(() => {
     if (isClientMounted && typeof window !== 'undefined') {
       const storedUserType = localStorage.getItem('userType');
@@ -64,7 +62,6 @@ export default function DashboardPage() {
       setUserEmail(storedUserEmail);
 
       if (storedUserType === 'client' && storedUserEmail) {
-        // Carregar nome do cliente
         const clientAuthDataString = localStorage.getItem(CLIENT_AUTH_DATA_KEY);
         if (clientAuthDataString) {
           try {
@@ -80,7 +77,6 @@ export default function DashboardPage() {
         setHasNoProgram(false);
         setAssignedTrainingInfo(null);
 
-        // Carregar programa atribuído
         const assignmentsString = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
         const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
 
@@ -95,7 +91,6 @@ export default function DashboardPage() {
               if (programDetails) {
                 setAssignedTrainingInfo({ program: programDetails, assignment: clientAssignment });
 
-                // Carregar progresso para este programa e usuário
                 const progressString = localStorage.getItem(CLIENT_PROGRAM_PROGRESS_KEY);
                 let allProgress: ClientProgramProgress[] = progressString ? JSON.parse(progressString) : [];
                 const userProgress = allProgress.find(p => p.userId === storedUserEmail && p.programId === programDetails.id);
@@ -103,7 +98,6 @@ export default function DashboardPage() {
                 if (userProgress) {
                   setClientProgress(userProgress);
                 } else {
-                  // Inicializar progresso se não existir
                   const newProgress: ClientProgramProgress = {
                     userId: storedUserEmail,
                     programId: programDetails.id,
@@ -112,7 +106,6 @@ export default function DashboardPage() {
                     lastCompletionDate: undefined,
                   };
                   setClientProgress(newProgress);
-                  // Não salvar aqui ainda, salvar ao finalizar um dia
                 }
 
               } else {
@@ -128,19 +121,26 @@ export default function DashboardPage() {
         setIsLoadingProgram(false);
       }
     }
-  }, [isClientMounted]);
+  }, [isClientMounted, userEmail]); // Added userEmail to dependencies
   
-  // Efeito para carregar checkboxes quando um dia é expandido
   useEffect(() => {
     if (activeAccordionItem && clientProgress && assignedTrainingInfo) {
-      const dayId = activeAccordionItem.replace('day-', ''); // Extrai o ID do dia do valor do acordeão
-      const workoutDay = assignedTrainingInfo.program.workoutDays.find((_, index) => `day-${index}` === activeAccordionItem);
-      if (workoutDay) {
-        const checkedForThisDay = clientProgress.checkedExercisesByDay[workoutDay.id] || [];
-        setCurrentDayCheckedExercises(new Set(checkedForThisDay));
+      const dayIndexStr = activeAccordionItem.replace('day-', '');
+      const dayIndex = parseInt(dayIndexStr, 10);
+
+      if (!isNaN(dayIndex) && dayIndex >= 0 && dayIndex < assignedTrainingInfo.program.workoutDays.length) {
+          const workoutDay = assignedTrainingInfo.program.workoutDays[dayIndex];
+          if (workoutDay) {
+              const checkedForThisDay = clientProgress.checkedExercisesByDay[workoutDay.id] || [];
+              setCurrentDayCheckedExercises(new Set(checkedForThisDay));
+          } else {
+               setCurrentDayCheckedExercises(new Set());
+          }
+      } else {
+          setCurrentDayCheckedExercises(new Set()); 
       }
     } else {
-       setCurrentDayCheckedExercises(new Set()); // Reset se nenhum dia estiver ativo
+       setCurrentDayCheckedExercises(new Set()); 
     }
   }, [activeAccordionItem, clientProgress, assignedTrainingInfo]);
 
@@ -153,6 +153,18 @@ export default function DashboardPage() {
       } else {
         newSet.add(exerciseId);
       }
+      // Temporarily store in-progress ticks for the current day
+      if (clientProgress && userEmail && assignedTrainingInfo) {
+        const tempProgress = {
+            ...clientProgress,
+            checkedExercisesByDay: {
+                ...clientProgress.checkedExercisesByDay,
+                [dayId]: Array.from(newSet),
+            }
+        };
+        // Update state to reflect temporary changes if needed, or rely on saving during finalization
+         setClientProgress(tempProgress); 
+      }
       return newSet;
     });
   };
@@ -160,18 +172,27 @@ export default function DashboardPage() {
   const handleFinishDay = (dayId: string) => {
     if (!clientProgress || !userEmail || !assignedTrainingInfo) return;
 
+    const isNewProgressCompletion = !clientProgress.completedWorkoutDayIds.includes(dayId);
+    let newCompletedWorkoutDayIds = [...clientProgress.completedWorkoutDayIds];
+    if (isNewProgressCompletion) {
+      newCompletedWorkoutDayIds.push(dayId);
+    }
+
     const updatedProgress: ClientProgramProgress = {
       ...clientProgress,
-      completedWorkoutDayIds: Array.from(new Set([...clientProgress.completedWorkoutDayIds, dayId])),
+      completedWorkoutDayIds: newCompletedWorkoutDayIds,
+      // Store current ticks for the session being finalized, then reset for next time.
+      // This part might need adjustment if historical ticks per session are needed.
+      // For now, we are resetting it for the next attempt.
       checkedExercisesByDay: {
         ...clientProgress.checkedExercisesByDay,
-        [dayId]: Array.from(currentDayCheckedExercises),
+        [dayId]: [], // Resetting for the next load via useEffect
       },
       lastCompletionDate: new Date().toISOString(),
     };
     setClientProgress(updatedProgress);
 
-    // Salvar no localStorage
+    // Save to localStorage
     const progressString = localStorage.getItem(CLIENT_PROGRAM_PROGRESS_KEY);
     let allProgress: ClientProgramProgress[] = progressString ? JSON.parse(progressString) : [];
     const userProgressIndex = allProgress.findIndex(p => p.userId === userEmail && p.programId === assignedTrainingInfo.program.id);
@@ -183,7 +204,10 @@ export default function DashboardPage() {
     }
     localStorage.setItem(CLIENT_PROGRAM_PROGRESS_KEY, JSON.stringify(allProgress));
 
-    toast({ title: "Treino do Dia Finalizado!", description: "Seu progresso foi salvo." });
+    toast({ title: "Treino do Dia Finalizado!", description: "Seu progresso foi salvo. O dia está pronto para ser refeito!" });
+    
+    // Clear UI checkboxes immediately for the current view
+    setCurrentDayCheckedExercises(new Set());
   };
 
 
@@ -219,11 +243,10 @@ export default function DashboardPage() {
   const formatDateForDisplay = (dateString?: string) => {
     if (!dateString) return 'Não definida';
     try {
-      const date = parseISO(dateString); // Para datas salvas como ISO string
+      const date = parseISO(dateString); 
       if (isValid(date)) {
         return format(date, 'dd/MM/yyyy');
       }
-      // Tentar parse como yyyy-MM-dd se parseISO falhar (para datas antigas de startDate/endDate)
       const dateParts = dateString.split('-');
       if (dateParts.length === 3) {
         const parsedLegacyDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
@@ -239,10 +262,10 @@ export default function DashboardPage() {
 
   const calculateProgress = () => {
     if (!clientProgress) return 0;
-    const targetTotalTreinos = 22;
+    const targetTotalTreinos = 22; // Hardcoded target
     const completedUniqueDays = clientProgress.completedWorkoutDayIds.length;
     const progress = (completedUniqueDays / targetTotalTreinos) * 100;
-    return Math.min(progress, 100); // Cap progress at 100%
+    return Math.min(progress, 100); 
   };
 
   const progressPercentage = calculateProgress();
@@ -308,7 +331,7 @@ export default function DashboardPage() {
                     <CardContent className="space-y-3">
                       <Progress value={progressPercentage} className="w-full" />
                       <p className="text-sm text-muted-foreground">
-                        Você completou {clientProgress.completedWorkoutDayIds.length} de 22 treinos para o objetivo.
+                        Você completou {clientProgress.completedWorkoutDayIds.length} de {22} treinos para o objetivo.
                       </p>
                       {clientProgress.lastCompletionDate && (
                         <p className="text-xs text-muted-foreground">
@@ -340,13 +363,13 @@ export default function DashboardPage() {
                         onValueChange={setActiveAccordionItem}
                     >
                       {assignedTrainingInfo.program.workoutDays.map((day, index) => {
-                        const isDayCompleted = clientProgress.completedWorkoutDayIds.includes(day.id);
+                        const isDayMarkedAsCompletedForProgress = clientProgress.completedWorkoutDayIds.includes(day.id);
                         return (
                           <AccordionItem value={`day-${index}`} key={day.id}>
                             <AccordionTrigger className="text-lg hover:no-underline">
                               <div className="flex items-center gap-2">
-                                {isDayCompleted && <Icons.Success className="h-5 w-5 text-green-500" />}
-                                <Badge variant={isDayCompleted ? "default" : "secondary"} className={`text-sm ${isDayCompleted ? 'bg-green-500 hover:bg-green-600' : ''}`}>{day.name}</Badge>
+                                {isDayMarkedAsCompletedForProgress && <Icons.Success className="h-5 w-5 text-green-500" />}
+                                <Badge variant={isDayMarkedAsCompletedForProgress ? "default" : "secondary"} className={`text-sm ${isDayMarkedAsCompletedForProgress ? 'bg-green-500 hover:bg-green-600' : ''}`}>{day.name}</Badge> 
                                 <span className="text-sm text-muted-foreground font-normal"> - {getExerciseCountText(day.exercises.length)}</span>
                               </div>
                             </AccordionTrigger>
@@ -360,7 +383,6 @@ export default function DashboardPage() {
                                           id={`ex-${day.id}-${exercise.id}`}
                                           checked={currentDayCheckedExercises.has(exercise.id)}
                                           onCheckedChange={() => handleCheckExercise(exercise.id, day.id)}
-                                          disabled={isDayCompleted}
                                         />
                                         <Label htmlFor={`ex-${day.id}-${exercise.id}`} className="font-medium text-base flex-1 cursor-pointer">
                                           {exercise.name}
@@ -369,12 +391,10 @@ export default function DashboardPage() {
                                       {renderExerciseDetails(exercise, day.id)}
                                     </li>
                                   ))}
-                                  {!isDayCompleted && (
-                                    <Button onClick={() => handleFinishDay(day.id)} className="w-full mt-4">
-                                      <Icons.Check className="mr-2 h-4 w-4" />
-                                      Finalizar Treino do Dia
-                                    </Button>
-                                  )}
+                                  <Button onClick={() => handleFinishDay(day.id)} className="w-full mt-4">
+                                    <Icons.Check className="mr-2 h-4 w-4" />
+                                    Finalizar Treino do Dia
+                                  </Button>
                                 </ul>
                               ) : (
                                 <p className="text-sm text-muted-foreground py-2">Nenhum exercício neste dia.</p>
@@ -408,3 +428,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
