@@ -10,57 +10,74 @@ import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { format, isValid } from 'date-fns';
 
 const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
 const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
 
+interface ClientTrainingAssignment {
+  programId: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 interface ClientTrainingAssignments {
-  [clientId: string]: string; // clientId -> programId
+  [clientId: string]: ClientTrainingAssignment;
 }
 
 export default function ClientTrackingPage() {
   const params = useParams();
   const router = useRouter();
-  const clientId = params.clientId as string;
+  const clientIdFromParams = params.clientId as string; // Might be encoded
 
-  const [assignedProgram, setAssignedProgram] = useState<TrainingProgram | null>(null);
+  const [assignedTrainingInfo, setAssignedTrainingInfo] = useState<{
+    program: TrainingProgram;
+    assignment: ClientTrainingAssignment;
+  } | null>(null);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isClientMounted, setIsClientMounted] = useState(false);
-  const [clientName, setClientName] = useState<string>('');
+  const [clientName, setClientName] = useState<string>(''); // Decoded client ID/email
 
   useEffect(() => {
     setIsClientMounted(true);
   }, []);
 
   useEffect(() => {
-    if (isClientMounted && typeof window !== 'undefined' && clientId) {
-      setClientName(decodeURIComponent(clientId)); 
+    if (isClientMounted && typeof window !== 'undefined' && clientIdFromParams) {
+      const decodedClientId = decodeURIComponent(clientIdFromParams);
+      setClientName(decodedClientId); 
 
       const assignmentsString = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
       const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
 
       if (assignmentsString && programsString) {
-        const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
-        const allPrograms: TrainingProgram[] = JSON.parse(programsString);
-        
-        // Use o clientId decodificado para buscar a atribuição
-        const decodedClientId = decodeURIComponent(clientId);
-        const assignedProgramId = assignments[decodedClientId];
+        try {
+          const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
+          const allPrograms: TrainingProgram[] = JSON.parse(programsString);
+          
+          const clientAssignment = assignments[decodedClientId];
 
-
-        if (assignedProgramId) {
-          const programDetails = allPrograms.find(p => p.id === assignedProgramId);
-          setAssignedProgram(programDetails || null);
-        } else {
-          setAssignedProgram(null);
+          if (clientAssignment && clientAssignment.programId) {
+            const programDetails = allPrograms.find(p => p.id === clientAssignment.programId);
+            if (programDetails) {
+              setAssignedTrainingInfo({ program: programDetails, assignment: clientAssignment });
+            } else {
+              setAssignedTrainingInfo(null); // Program not found in library
+            }
+          } else {
+            setAssignedTrainingInfo(null); // No assignment for this client
+          }
+        } catch (error) {
+          console.error("Error parsing tracking data:", error);
+          setAssignedTrainingInfo(null);
         }
       } else {
-        setAssignedProgram(null);
+        setAssignedTrainingInfo(null); // Missing assignments or programs data
       }
       setIsLoading(false);
     }
-  }, [clientId, isClientMounted]);
+  }, [clientIdFromParams, isClientMounted]);
 
   const renderExerciseDetails = (exercise: Exercise) => (
     <div className="ml-4 pl-4 border-l border-muted-foreground/30 py-1 my-1 text-sm">
@@ -75,6 +92,19 @@ export default function ClientTrackingPage() {
     if (count === 0) return "Nenhum exercício";
     if (count === 1) return "1 exercício";
     return `${count} exercícios`;
+  };
+
+  const formatDateForDisplay = (dateString?: string) => {
+    if (!dateString) return 'Não definida';
+    try {
+      const date = new Date(dateString + 'T00:00:00'); // Ensure date is parsed as local
+      if (isValid(date)) {
+        return format(date, 'dd/MM/yyyy');
+      }
+      return 'Data inválida';
+    } catch (error) {
+      return 'Data inválida';
+    }
   };
 
   return (
@@ -101,15 +131,24 @@ export default function ClientTrackingPage() {
             </div>
           )}
 
-          {!isLoading && assignedProgram && (
+          {!isLoading && assignedTrainingInfo && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold text-primary flex items-center">
-                <Icons.WorkoutPlan className="mr-3 h-7 w-7" />
-                Treino Atribuído: {assignedProgram.name}
-              </h2>
-              {assignedProgram.workoutDays.length > 0 ? (
+               <div className="mb-4 p-4 border rounded-md bg-card">
+                  <h2 className="text-2xl font-semibold text-primary flex items-center mb-2">
+                    <Icons.WorkoutPlan className="mr-3 h-7 w-7" />
+                    Treino Atribuído: {assignedTrainingInfo.program.name}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Data de Início:</strong> {formatDateForDisplay(assignedTrainingInfo.assignment.startDate)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Data de Fim:</strong> {formatDateForDisplay(assignedTrainingInfo.assignment.endDate)}
+                  </p>
+               </div>
+
+              {assignedTrainingInfo.program.workoutDays.length > 0 ? (
                 <Accordion type="single" collapsible className="w-full">
-                  {assignedProgram.workoutDays.map((day, index) => (
+                  {assignedTrainingInfo.program.workoutDays.map((day, index) => (
                     <AccordionItem value={`day-${index}`} key={day.id}>
                       <AccordionTrigger className="text-lg hover:no-underline">
                         <div className="flex items-center gap-2">
@@ -140,16 +179,16 @@ export default function ClientTrackingPage() {
             </div>
           )}
 
-          {!isLoading && !assignedProgram && (
+          {!isLoading && !assignedTrainingInfo && (
              <Card className="mt-4 border-dashed border-primary/50 bg-primary/5">
                 <CardContent className="pt-6 text-center">
                     <Icons.WorkoutPlan className="h-12 w-12 text-primary/70 mx-auto mb-3" />
                     <p className="font-semibold text-lg text-primary">Nenhum Treino Atribuído</p>
                     <p className="text-muted-foreground mt-1">
-                      Este cliente ainda não tem um programa de treino atribuído. Você pode atribuir um na seção "Montar Treino".
+                      Este cliente ainda não tem um programa de treino atribuído.
                     </p>
                      <Button asChild className="mt-4">
-                        <Link href={`/clients/${clientId}/assign-training`}> {/* clientId aqui é o original da rota, pode estar codificado */}
+                        <Link href={`/clients/${clientIdFromParams}/assign-training`}>
                             <Icons.Add className="mr-2 h-4 w-4" />
                             Atribuir Treino Agora
                         </Link>
@@ -162,3 +201,5 @@ export default function ClientTrackingPage() {
     </div>
   );
 }
+
+    

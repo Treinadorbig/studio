@@ -9,13 +9,20 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { format, isValid } from 'date-fns';
 
 const LOCAL_STORAGE_PROGRAMS_KEY = 'trainingLibraryPrograms';
 const CLIENT_TRAINING_ASSIGNMENTS_KEY = 'clientTrainingAssignments';
 const CLIENT_AUTH_DATA_KEY = 'clientAuthData';
 
+interface ClientTrainingAssignment {
+  programId: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 interface ClientTrainingAssignments {
-  [clientId: string]: string; // clientId (raw email) -> programId
+  [clientId: string]: ClientTrainingAssignment; 
 }
 
 export default function DashboardPage() {
@@ -23,7 +30,12 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [clientName, setClientName] = useState<string | null>(null);
   const [isClientMounted, setIsClientMounted] = useState(false);
-  const [assignedProgram, setAssignedProgram] = useState<TrainingProgram | null>(null);
+  
+  const [assignedTrainingInfo, setAssignedTrainingInfo] = useState<{
+    program: TrainingProgram;
+    assignment: ClientTrainingAssignment;
+  } | null>(null);
+  
   const [isLoadingProgram, setIsLoadingProgram] = useState(false);
   const [hasNoProgram, setHasNoProgram] = useState(false);
 
@@ -54,7 +66,7 @@ export default function DashboardPage() {
         
         setIsLoadingProgram(true);
         setHasNoProgram(false); 
-        setAssignedProgram(null); 
+        setAssignedTrainingInfo(null);
 
         const assignmentsString = localStorage.getItem(CLIENT_TRAINING_ASSIGNMENTS_KEY);
         const programsString = localStorage.getItem(LOCAL_STORAGE_PROGRAMS_KEY);
@@ -64,14 +76,14 @@ export default function DashboardPage() {
             const assignments: ClientTrainingAssignments = JSON.parse(assignmentsString);
             const allPrograms: TrainingProgram[] = JSON.parse(programsString);
             
-            const assignedProgramId = assignments[storedUserEmail]; 
+            const clientAssignment = assignments[storedUserEmail]; 
 
-            if (assignedProgramId) {
-              const programDetails = allPrograms.find(p => p.id === assignedProgramId);
+            if (clientAssignment && clientAssignment.programId) {
+              const programDetails = allPrograms.find(p => p.id === clientAssignment.programId);
               if (programDetails) {
-                setAssignedProgram(programDetails);
+                setAssignedTrainingInfo({ program: programDetails, assignment: clientAssignment });
               } else {
-                console.warn(`Assigned program with ID ${assignedProgramId} not found in library.`);
+                console.warn(`Assigned program with ID ${clientAssignment.programId} not found in library.`);
                 setHasNoProgram(true); 
               }
             } else {
@@ -116,6 +128,19 @@ export default function DashboardPage() {
     if (count === 0) return "Nenhum exercício";
     if (count === 1) return "1 exercício";
     return `${count} exercícios`;
+  };
+
+  const formatDateForDisplay = (dateString?: string) => {
+    if (!dateString) return 'Não definida';
+     try {
+      const date = new Date(dateString + 'T00:00:00'); // Ensure date is parsed as local
+      if (isValid(date)) {
+        return format(date, 'dd/MM/yyyy');
+      }
+      return 'Data inválida';
+    } catch (error) {
+      return 'Data inválida';
+    }
   };
 
   return (
@@ -170,15 +195,24 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {!isLoadingProgram && assignedProgram && (
+              {!isLoadingProgram && assignedTrainingInfo && (
                 <div className="space-y-4">
-                  <h2 className="text-2xl font-semibold text-primary flex items-center">
-                    <Icons.WorkoutPlan className="mr-3 h-7 w-7" />
-                    Seu Treino Atribuído: {assignedProgram.name}
-                  </h2>
-                  {assignedProgram.workoutDays.length > 0 ? (
+                  <div className="mb-4 p-4 border rounded-md bg-card">
+                    <h2 className="text-2xl font-semibold text-primary flex items-center mb-2">
+                      <Icons.WorkoutPlan className="mr-3 h-7 w-7" />
+                      Seu Treino: {assignedTrainingInfo.program.name}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Data de Início:</strong> {formatDateForDisplay(assignedTrainingInfo.assignment.startDate)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Data de Fim:</strong> {formatDateForDisplay(assignedTrainingInfo.assignment.endDate)}
+                    </p>
+                  </div>
+
+                  {assignedTrainingInfo.program.workoutDays.length > 0 ? (
                     <Accordion type="single" collapsible className="w-full">
-                      {assignedProgram.workoutDays.map((day, index) => (
+                      {assignedTrainingInfo.program.workoutDays.map((day, index) => (
                         <AccordionItem value={`day-${index}`} key={day.id}>
                           <AccordionTrigger className="text-lg hover:no-underline">
                             <div className="flex items-center gap-2">
@@ -227,3 +261,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
